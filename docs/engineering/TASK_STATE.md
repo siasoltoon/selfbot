@@ -1,28 +1,25 @@
 # Task State
 
 ## Active Task
-Phase 2 / Task 2.2 — Event bus, command registry, task manager and scheduler.
+Phase 2 / Task 2.3 — Plugin lifecycle boundary and core service wiring.
 
 ## Status
 READY TO START
 
 ## Completed
-Task 2.1:
-- configuration validation
-- database/session boundary
-- Alembic migration boundary
-- structured logging
-- unified error taxonomy
-- runtime bootstrap
+Task 2.2:
+- normalized event envelope/router
+- command registry and permission boundary
+- durable task model/lifecycle
+- scheduler primitives
+- tests and CI validation
 
 ## Validation
-- GitHub Actions run 35608388506: PASS on Python 3.11 and 3.12.
-- Migration test passed after Alembic configuration fix.
+- GitHub Actions run 35608898926: PASS on Python 3.11 and 3.12.
 
 ## Next Exact Work
-1. Implement normalized internal event envelope and router.
-2. Implement command registry with aliases, argument validation and permissions boundary.
-3. Implement durable task lifecycle service using the database boundary.
-4. Implement scheduler primitives that create task intents rather than executing feature logic directly.
-5. Add targeted tests and failure-path coverage.
-6. Run CI, update engineering memory and commit.
+1. Define plugin manifest/lifecycle types.
+2. Add discovery/validation/enable/disable boundaries without executing plugin-specific features.
+3. Wire event/command/task services behind a single core service container.
+4. Add tests for plugin isolation and lifecycle failure paths.
+5. Run CI, update engineering memory and commit.
