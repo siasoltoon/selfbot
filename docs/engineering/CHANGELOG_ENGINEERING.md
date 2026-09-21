@@ -1,15 +1,12 @@
 # Engineering Changelog
 
-## 2026-09-21 — Bootstrap
-- Inspected repository history and confirmed the baseline.
-- Preserved the master specification at docs/MASTER_PROMPT.md.
-- Added deployment-neutral Python foundation.
-- Added validated environment configuration.
-- Added initial unit tests.
-- Added GitHub Actions CI for Python 3.11/3.12.
-- Added repository hygiene files and MIT license.
-- Initialized and synchronized engineering-memory documents.
-- Local validation: compileall PASS; pytest 3 passed; TOML/YAML parsing PASS.
-- Direct repository checkout is unavailable in this environment because outbound GitHub network access is disabled.
+## 2026-09-21 — Phase 0 complete
+- Established the Python foundation and configuration boundary.
+- Added repository hygiene, environment example, tests and MIT license.
+- Added GitHub Actions CI for Python 3.11 and 3.12.
+- Initialized engineering memory.
+- Local validation passed.
+- GitHub Actions run 35607209926 passed on both supported Python versions.
 
-Next: verify the bootstrap PR CI, then start Phase 1 Task 1.1.
+## Next
+Phase 1 / Task 1.1 — define the technology stack and top-level application architecture.
