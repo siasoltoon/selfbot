@@ -1,26 +1,21 @@
 # Project State
 
 ## Current Position
-- Phase: 2 — Core Foundation
-- Current task: 2.4 — Add Telegram adapter boundary and application startup/shutdown lifecycle
-- Status: READY TO START
-- Last validated implementation: Task 2.3 PR #5, CI run 35609251101
-- CI result: Python 3.11 and 3.12 passed
+- Phase: 10 — Advanced PC Worker
+- Current task: 10.2 — Integrate Phase 4-10 capability layers into runtime/services and harden provider/transport adapters
+- Status: IN PROGRESS
+- Last validated implementation: Phases 4-10 core capability layer PR #9
+- CI result: GitHub Actions run 35611024600 passed on Python 3.11 and 3.12
 
-## Completed Phase 2 Tasks
-- 2.1 configuration, database foundation, logging and unified errors
-- 2.2 event bus, command registry, durable task manager and scheduler
-- 2.3 plugin lifecycle boundary and shared core service composition
+## Completed Validated Work
+- Phase 0 bootstrap
+- Phase 1 architecture
+- Phase 2 Tasks 2.1–2.4
+- Phase 3 plugin lifecycle hardening
+- Phase 4-10 core capability boundaries: Telegram management, automation/content, game/economy isolation, AI/memory contracts, safe web retrieval boundary, voice provider contracts, authenticated PC Worker runtime/protocol primitives
 
-## Task 2.3 Implementation
-- PluginManifest and lifecycle states
-- plugin API compatibility validation
-- dependency validation
-- permission checks
-- enable/disable/failure handling
-- CoreServices composition root
-- runtime bootstrap wiring
-- tests for lifecycle and service composition
+## Important Limitation
+Phase 4-10 capability layers are implemented and tested, but are not yet claimed as full end-user feature completion. Provider-specific AI/STT/TTS/search integrations, broader Telegram feature commands, durable persistence for new domains, and full runtime wiring remain.
 
 ## Exact Next Action
-Implement Task 2.4: Telegram client adapter boundary plus graceful application startup/shutdown. Keep Telegram library details out of core domain services and add runtime lifecycle tests.
+Integrate the validated Phase 4-10 services into CoreServices and the Telegram/event/task boundaries, then add provider/transport adapters and targeted integration tests before declaring Phases 4-10 complete.
