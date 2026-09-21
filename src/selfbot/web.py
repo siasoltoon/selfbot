@@ -2,6 +2,7 @@
 from __future__ import annotations
 import ipaddress,socket
 from dataclasses import dataclass
+from typing import Protocol
 from urllib.parse import urlparse
 from urllib.request import Request,urlopen
 from .errors import DependencyError,ValidationError
