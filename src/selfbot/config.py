@@ -32,6 +32,7 @@ class Settings:
     pc_worker_enabled: bool
     pc_worker_url: str | None
     pc_worker_token: str | None
+    owner_id: str | None = None
 
 
 def load_settings() -> Settings:
@@ -52,6 +53,7 @@ def load_settings() -> Settings:
     worker_enabled = _bool_env("PC_WORKER_ENABLED", False)
     worker_url = os.getenv("PC_WORKER_URL")
     worker_token = os.getenv("PC_WORKER_TOKEN")
+    owner_id = os.getenv("OWNER_ID") or None
 
     if worker_enabled and not worker_url:
         raise ConfigurationError("PC_WORKER_URL is required when PC_WORKER_ENABLED=true")
@@ -69,4 +71,5 @@ def load_settings() -> Settings:
         pc_worker_enabled=worker_enabled,
         pc_worker_url=worker_url,
         pc_worker_token=worker_token,
+        owner_id=owner_id,
     )

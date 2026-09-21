@@ -1,33 +1,32 @@
 # Task State
 
 ## Active Task
-Phases 11-20 — core implementation validated; runtime/persistence integration is next.
+Phases 1-25 — implementation/hardening sweep complete for code-side work that can be performed without external operator credentials or production infrastructure.
 
 ## Status
-IN PROGRESS
+IN PROGRESS — verification gate
 
-## Latest Validation
-- Phase 4-10 core capability PR #9 merged; CI run 35611024600 passed on Python 3.11 and 3.12.
-- Phase 11-20 core capability PR #10 open; CI run 35613550835 passed on Python 3.11 and 3.12.
-- Phase 11-20 tests cover authorization, approval gating, workflow execution, reminder lifecycle, emergency lock/recovery, backup integrity, analytics, storage ownership/archive, agent permission boundaries, and hardening validation.
+## Completed In This Sweep
+- Composed Phase 11-20 services into CoreServices.
+- Added durable domain-state repository.
+- Added domain-state and security-audit ORM models.
+- Added Alembic initial and Phase 11-20 migrations.
+- Added Phase 21 provider-neutral OCR benchmark metrics.
+- Added Phase 22 adversarial/failure harness.
+- Added Phase 23 Persian/English UX validation and pagination.
+- Added Phase 24 production evidence model.
+- Added Phase 25 final release audit model.
+- Added focused tests for the above.
 
-## Completed Core Layers
-- Phase 11 admin service
-- Phase 12 controlled learning
-- Phase 13 advanced workflows
-- Phase 14 reminders
-- Phase 15 security
-- Phase 16 backup/restore primitives
-- Phase 17 analytics
-- Phase 18 smart storage
-- Phase 19 multi-agent routing
-- Phase 20 hardening policy
+## Operator-Only / Environment-Dependent Work
+1. Real Telegram login/session and message-flow verification.
+2. Real AI/STT/TTS/search provider credentials and provider behavior.
+3. Real PC Worker transport, heartbeat, claim/retry and offline recovery.
+4. Labeled OCR image dataset and actual OCR provider benchmark.
+5. Real deployment startup, health, restart and rollback checks.
+6. Real backup/restore against deployed data.
+7. Load/performance evidence on the target deployment.
+8. Final security/dependency audit in the target environment.
 
-## Remaining
-1. Integrate Phase 11-20 services into CoreServices/runtime.
-2. Add durable ORM models and Alembic migrations for domain state.
-3. Expose a concrete API/dashboard boundary without coupling the core to a deployment target.
-4. Connect reminders/workflows/security/analytics/storage to real Telegram/events/tasks.
-5. Connect multi-agent routing to the existing provider-neutral AI layer without bypassing permissions.
-6. Add backup/restore against real database/storage snapshots and validate restore in an isolated environment.
-7. Run integration, startup/shutdown, security, and deployment-path verification.
+## Rule
+Do not mark final release COMPLETE until CI, integration, deployment and recovery evidence are all green.

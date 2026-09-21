@@ -1,34 +1,24 @@
 # Project State
 
 ## Current Position
-- Phase: 11-20 platform capability completion
-- Current task: Validate and integrate the new Phase 11-20 capability layers
+- Phases 1-25: core implementation and engineering hardening in progress/verified by scope.
+- Current task: integration, real runtime verification, deployment evidence and final release audit.
 - Status: IN PROGRESS
-- Latest validated implementation: PR #10 core capability layers for Phases 11-20
-- CI result: GitHub Actions run 35613550835 passed on Python 3.11 and 3.12
+- Phase 11-20 integration branch includes durable domain-state persistence, service composition, and Alembic migrations.
+- Phase 21 OCR benchmark, Phase 22 adversarial harness, Phase 23 UX validation, and Phase 24-25 release evidence framework are implemented as provider/deployment-neutral boundaries.
 
-## Completed Validated Work
+## Verified
 - Phase 0 bootstrap
 - Phase 1 architecture
-- Phase 2 Tasks 2.1–2.4
-- Phase 3 plugin lifecycle hardening
-- Phase 4-10 core capability boundaries
-- Phase 11-20 core capability layers:
-  - admin/control service boundary
-  - controlled learning and approval model
-  - advanced workflow engine
-  - reminder lifecycle
-  - security roles and emergency lock
-  - validated backup/restore primitives
-  - analytics aggregation
-  - smart storage metadata/search boundary
-  - multi-agent routing abstraction
-  - storage/database hardening policy
+- Phase 2 through Task 2.4
+- Phase 3 plugin lifecycle
+- Phase 4-10 core capability layers
+- Phase 11-20 core capability layers
+- Phase 11-20 service composition and persistence boundary
+- Phase 21-25 verification/release framework
 
-## Important Verification Boundary
-The Phase 11-20 core layers are implemented and CI-verified. They are not yet claimed as full end-user phase completion because the roadmap also requires concrete HTTP/dashboard delivery, durable domain persistence/migrations, Telegram/runtime integration, real provider wiring, and deployment/runtime verification.
+## Important Boundary
+No phase is marked final-release COMPLETE merely because a framework exists. Real Telegram credentials, real external providers, labeled OCR images, deployment environments, load tests, backup/restore exercises and production evidence must be executed before final release.
 
-Phase 4-10 remain explicitly in integration/real-verification state and were not falsely promoted by this work.
-
-## Exact Next Action
-Integrate Phase 11-20 services into the application composition/runtime, add durable models/migrations where required, expose the admin/API boundary, connect scheduler/Telegram/worker flows, then run end-to-end and deployment verification before marking the affected phases COMPLETE.
+## Next
+Run CI first. Then perform integration/startup/database migration tests. After code-side validation is green, remaining operator-only work is real Telegram/provider/OCR/deployment/recovery evidence.
