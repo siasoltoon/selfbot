@@ -1,32 +1,37 @@
 # Architecture Map
 
 ## Current Phase
-Phase 10 — Advanced PC Worker, with Phase 4-10 core capability layers implemented and awaiting full runtime integration.
+Phases 11-20 core capability implementation validated; runtime integration remains. Phase 4-10 remain in their documented integration/real-verification state.
 
-## Implemented
+## Implemented Foundation
 - configuration, unified errors, persistence boundary, structured logging
 - event router, command registry, durable task manager, scheduler
 - plugin manifest/lifecycle/permission/dependency validation
 - Telethon adapter boundary and application lifecycle
-- Telegram self-management service boundary
-- automation/content engine
-- isolated game/economy primitives
-- provider-neutral AI/memory services
-- safe web retrieval boundary
-- STT/TTS provider contracts
-- authenticated PC Worker registry/runtime primitives
+- Phase 4-10 capability boundaries
+- Phase 11 admin service
+- Phase 12 controlled learning
+- Phase 13 workflow engine
+- Phase 14 reminder service
+- Phase 15 security service
+- Phase 16 backup validation/export
+- Phase 17 analytics aggregation
+- Phase 18 smart storage metadata/search
+- Phase 19 permission-gated agent router
+- Phase 20 storage hardening policy
 
-## Runtime Integration Target
+## Target Runtime Integration
 Telegram Adapter
 -> Event Router
 -> CoreServices
 -> capability services
--> Task Manager
+-> Task Manager / Scheduler
 -> optional PC Worker
 -> external provider adapters
 -> Persistence
+-> Admin API/UI
 
-Telegram/library/provider/worker transport objects remain behind adapters.
+The Phase 11-20 services currently remain deployment-neutral Python boundaries. Concrete HTTP/UI, database persistence, Telegram delivery, and provider adapters must be added behind replaceable infrastructure boundaries.
 
 ## Deployment
-Deployment-neutral core supporting Railway, VPS, temporary/limited-runtime environments and personal PC/Laptop. Provider-specific behavior remains in infrastructure/configuration.
+Deployment-neutral core supporting Railway, VPS, limited-runtime environments and personal PC/Laptop. No Phase 11-20 service embeds Railway-specific behavior.
