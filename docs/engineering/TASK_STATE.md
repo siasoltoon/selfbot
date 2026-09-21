@@ -1,32 +1,29 @@
 # Task State
 
 ## Active Task
-Phases 1-25 — implementation/hardening sweep complete for code-side work that can be performed without external operator credentials or production infrastructure.
+Final verification of Phases 1-25.
 
 ## Status
-IN PROGRESS — verification gate
+IN PROGRESS — code-side work complete; external evidence pending.
 
-## Completed In This Sweep
-- Composed Phase 11-20 services into CoreServices.
-- Added durable domain-state repository.
-- Added domain-state and security-audit ORM models.
-- Added Alembic initial and Phase 11-20 migrations.
-- Added Phase 21 provider-neutral OCR benchmark metrics.
-- Added Phase 22 adversarial/failure harness.
-- Added Phase 23 Persian/English UX validation and pagination.
-- Added Phase 24 production evidence model.
-- Added Phase 25 final release audit model.
-- Added focused tests for the above.
+## Latest Verified Implementation
+PR #11 merged: a29ff2f56047c2b8b6873ca89d48ee8f91040c78.
+CI run 35614933655 passed on Python 3.11 and 3.12.
 
-## Operator-Only / Environment-Dependent Work
-1. Real Telegram login/session and message-flow verification.
-2. Real AI/STT/TTS/search provider credentials and provider behavior.
-3. Real PC Worker transport, heartbeat, claim/retry and offline recovery.
-4. Labeled OCR image dataset and actual OCR provider benchmark.
-5. Real deployment startup, health, restart and rollback checks.
-6. Real backup/restore against deployed data.
-7. Load/performance evidence on the target deployment.
-8. Final security/dependency audit in the target environment.
+## Code-Side Completion
+All implementation work that can be responsibly completed without external operator credentials/data/infrastructure has been completed for the current roadmap.
+
+## Remaining Operator/Environment Work
+1. Real Telegram session and message-flow test.
+2. Real AI/STT/TTS/search provider verification.
+3. Real PC Worker transport and recovery verification.
+4. Real labeled OCR benchmark.
+5. Real migration smoke test on target DB.
+6. Backup/restore round-trip.
+7. Deployment health/restart/rollback.
+8. Performance/load evidence.
+9. Final security/dependency audit.
+10. Final Phase 25 evidence review.
 
 ## Rule
-Do not mark final release COMPLETE until CI, integration, deployment and recovery evidence are all green.
+Do not fabricate PASS for environment-dependent checks. Any failure discovered there becomes a new targeted engineering task.
