@@ -32,7 +32,7 @@ class Settings:
     pc_worker_enabled: bool
     pc_worker_url: str | None
     pc_worker_token: str | None
-    owner_id: str | None
+    owner_id: str | None = None
 
 
 def load_settings() -> Settings:
