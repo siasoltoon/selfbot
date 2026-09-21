@@ -4,31 +4,26 @@
 Phase 2 core foundation.
 
 ## Implemented
-- Python 3.11+ package foundation
-- validated environment configuration
-- unified error taxonomy
-- SQLAlchemy engine/session boundary
-- Alembic migration boundary
-- bootstrap metadata model
-- structured secret-safe logging
-- deployment-neutral runtime bootstrap
-- automated tests and CI
-
-## Defined
-Telegram Client Adapter -> Event Router -> Core Application -> Command/Task/Scheduler Services -> Plugin Runtime -> Durable Persistence -> Local Worker / Optional PC Worker -> External Service Adapters
-
-Administration API:
-FastAPI -> Auth/Validation -> Core Services -> Persistence/Adapters
-
-## Next Implementation Boundaries
-- normalized internal event envelope
+- configuration
+- unified errors
+- SQLAlchemy/Alembic persistence boundary
+- structured logging
+- runtime bootstrap
+- normalized event router
 - command registry
-- durable task lifecycle
-- scheduler
-- plugin lifecycle
-- Telegram adapter
-- API
-- worker protocol
+- durable task manager
+- scheduler primitives
+- automated CI
+
+## Next Implementation Boundary
+Core Service Container
+-> Event Router
+-> Command Registry
+-> Task Manager
+-> Scheduler
+-> Plugin Runtime
+
+Plugin Runtime remains behind the documented manifest/lifecycle/permission interfaces.
 
 ## Deployment
 Deployment-neutral core supporting Railway, VPS, temporary/limited-runtime environments and personal PC/Laptop. Provider-specific behavior remains in infrastructure/configuration.
