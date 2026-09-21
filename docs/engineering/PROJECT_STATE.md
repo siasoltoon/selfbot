@@ -2,33 +2,37 @@
 
 ## Current Position
 - Phase: 0 — Project Bootstrap
-- Current task: 0.2 — Complete bootstrap validation and prepare transition to Phase 1
-- Status: IN PROGRESS
-- Last validated implementation commit: `9dcd791aa0465a6ce3492ba8b69f532e69027a0d`
+- Current task: 0.3 — Finalize Phase 0 documentation and transition to Phase 1
+- Status: READY FOR PHASE TRANSITION
+- Last validated implementation commit: `2bf21303ad44b9d6b6d7a924c451f87f86d15f70`
 - Working branch: `feat/project-bootstrap`
 
 ## Repository Baseline
-At continuation start, the repository contained only the initial README and `docs/MASTER_PROMPT.md`. The required engineering-memory files did not yet exist, so this state was initialized from the repository's actual commits rather than assumed prior progress.
+At continuation start, the repository contained only the initial README and `docs/MASTER_PROMPT.md`. The required engineering-memory files did not exist, so continuation state was initialized from actual repository history.
 
 ## Completed
-- Repository inspected through GitHub history.
-- Master engineering specification present.
-- Bootstrap branch created.
-- README replaced with project-specific development/status documentation.
-- Added environment example and gitignore.
-- Added Python package foundation and configuration loader.
-- Added initial configuration unit tests.
-- Created persistent engineering-memory documents.
+- Repository baseline inspected.
+- Master engineering specification preserved.
+- Python 3.11+ foundation established.
+- Environment-backed configuration with validation added.
+- Optional PC Worker configuration boundary added without making worker availability mandatory.
+- Repository hygiene files added.
+- Initial unit tests added.
+- GitHub Actions CI workflow added for Python 3.11 and 3.12.
+- MIT license added.
+- Persistent engineering memory initialized and synchronized.
 
 ## Validation
-- Local isolated pytest validation of the exact bootstrap configuration/test logic: 3 passed.
-- Direct repository clone was unavailable in this environment because outbound GitHub network resolution is unavailable.
-- GitHub-side CI has not yet been configured.
+- Python compileall: PASS.
+- pytest: 3 passed.
+- pyproject TOML parsing: PASS.
+- CI workflow YAML parsing: PASS.
+- Repository-side CI is configured; PR execution remains the final remote validation gate.
 
 ## Known Limitations
-- Telegram client, database, event bus, task manager, plugin runtime, worker protocol and other roadmap features are not implemented yet.
-- No production credentials are configured or required for bootstrap.
-- Full repository runtime validation must occur through repository CI or a machine with repository checkout capability.
+- Telegram client and all later roadmap capabilities are not implemented yet.
+- Repository checkout from this environment is unavailable because outbound GitHub DNS/network access is disabled.
+- Full runtime validation therefore relies on local isolated validation plus repository CI.
 
 ## Next Exact Action
-Finish bootstrap validation/CI foundation, then begin Phase 1 architecture design without redoing bootstrap work.
+Complete the Phase 0 PR validation. If CI passes, start Phase 1 / Task 1.1: define and document the technology stack and top-level application architecture.
