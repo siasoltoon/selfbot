@@ -19,3 +19,4 @@ def test_alembic_upgrade_head(tmp_path):
 
     assert "alembic_version" in tables
     assert "system_metadata" in tables
+    assert "tasks" in tables
