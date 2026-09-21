@@ -88,3 +88,20 @@ def test_plugin_api_version_is_validated():
             PluginManifest(plugin_id="old", version="1", api_version="1"),
             DemoPlugin,
         )
+
+
+def test_plugin_config_and_capabilities():
+    manager = PluginManager()
+    manager.register(
+        PluginManifest(plugin_id="cfg", version="1", api_version="1",
+                       capabilities=("utility",), config_schema={"enabled": True}),
+        DemoPlugin,
+    )
+    manager.configure("cfg", {"enabled": False})
+    assert manager.get("cfg").config == {"enabled": False}
+
+def test_plugin_circular_dependency_rejected():
+    manager = PluginManager()
+    manager.register(PluginManifest(plugin_id="a", version="1", api_version="1", dependencies=("b",)), DemoPlugin)
+    with pytest.raises(DependencyError):
+        manager.register(PluginManifest(plugin_id="b", version="1", api_version="1", dependencies=("a",)), DemoPlugin)
