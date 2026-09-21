@@ -1,29 +1,35 @@
 # Project State
 
 ## Current Position
-- Phase: 1 — System Architecture Design
-- Current task: 1.1 — Define technology stack and top-level application architecture
+- Phase: 2 — Core Foundation
+- Current task: 2.1 — Implement production configuration, database foundation and unified logging/error boundaries
 - Status: READY TO START
-- Last validated commit: `d3bba42d2fe7526c9524c7bbc921774d7c193fe9`
-- Bootstrap PR: #1
-- Bootstrap CI run: `35607209926` — Python 3.11 and 3.12 jobs passed
+- Last completed architecture commit: phase 1 documentation branch
+- Bootstrap CI: run 35607209926 passed on Python 3.11 and 3.12
 
-## Completed Phase
-Phase 0 — Project Bootstrap
-- repository foundation
-- deployment-neutral configuration boundary
-- optional worker configuration
-- initial tests
-- CI
-- repository hygiene
-- engineering memory
-- license
+## Completed
+### Phase 0
+Bootstrap foundation, configuration validation, tests, CI, repository hygiene, license and engineering memory.
 
-## Current Phase
-Phase 1 — System Architecture Design.
+### Phase 1
+Defined and documented:
+- technology stack
+- application architecture
+- event/command/task/scheduler boundaries
+- database design
+- plugin lifecycle/isolation
+- optional PC Worker protocol
+- security model
+- API design
+- deployment neutrality
 
-## Exact Next Action
-Define and document the technology stack and top-level application architecture from the actual bootstrap repository. Then add the required Phase 1 architecture documents without implementing later-phase features prematurely.
+## Validation
+- Architecture document presence: PASS.
+- Cross-document required-term consistency check: PASS.
+- Phase 0 CI: PASS on Python 3.11 and 3.12.
 
 ## Known Limitations
-No Telegram client, database runtime, plugin runtime, worker protocol, dashboard or AI feature is implemented yet. These belong to later phases.
+The documented stack is not yet fully implemented. No claim is made that Telegram, database, plugin, API or worker runtime functionality is operational.
+
+## Exact Next Action
+Start Phase 2 Task 2.1 from the architecture documents. Implement only the core foundation required by that task, then add targeted tests and CI validation.
