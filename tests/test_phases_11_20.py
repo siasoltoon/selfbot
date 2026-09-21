@@ -27,13 +27,12 @@ def test_learning_requires_approval():
     assert e.summarize()["command"]==1
     assert e.approve("s1").requires_approval is False
 
-@pytest.mark.asyncio
-async def test_workflow_condition_and_action():
+def test_workflow_condition_and_action():
     seen=[]
     engine=WorkflowEngine()
     engine.add(Workflow("w1","message",lambda e:"ok" in str(e.payload.get("text")),lambda e:seen.append(e.event_id)))
     event=EventEnvelope("message","test",{"text":"ok"})
-    result=await engine.handle(event)
+    result=asyncio.run(engine.handle(event))
     assert result[0].executed and seen
 
 def test_reminder_lifecycle():
@@ -73,11 +72,10 @@ class EchoAgent:
     async def run(self,prompt,context=()):
         return prompt
 
-@pytest.mark.asyncio
-async def test_agent_router_permission_boundary():
+def test_agent_router_permission_boundary():
     r=AgentRouter(); r.register(AgentRoute("research","agent.research"),EchoAgent())
-    with pytest.raises(AuthorizationError): await r.run("research","hello",allowed_permissions=set())
-    assert await r.run("research","hello",allowed_permissions={"agent.research"})=="hello"
+    with pytest.raises(AuthorizationError): asyncio.run(r.run("research","hello",allowed_permissions=set()))
+    assert asyncio.run(r.run("research","hello",allowed_permissions={"agent.research"}))=="hello"
 
 def test_hardening_policy():
     validate_storage_policy(StoragePolicy())
