@@ -11,6 +11,7 @@ readme = "README.md"
 dependencies = [
     "SQLAlchemy>=2,<3",
     "alembic>=1.13,<2",
+    "croniter>=3,<7",
 ]
 
 [project.optional-dependencies]
