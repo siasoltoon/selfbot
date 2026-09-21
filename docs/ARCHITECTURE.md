@@ -67,7 +67,7 @@ EVENT -> validate -> authorize -> route -> condition/use-case -> create task whe
 Heavy work should be deferred instead of blocking the Telegram event path.
 
 ## 6. Deployment Model
-The same application package is deployable in Railway, standard VPS, temporary/limited-runtime server environments and personal PC/Laptop.
+The architecture is deployment-neutral: the same application package is deployable in Railway, standard VPS, temporary/limited-runtime server environments and personal PC/Laptop.
 
 Deployment differences belong in environment variables, Docker/Compose files, service definitions, infrastructure adapters and startup configuration. No core module may branch on a provider-specific deployment name to implement business behavior.
 
