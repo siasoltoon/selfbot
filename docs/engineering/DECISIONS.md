@@ -29,3 +29,15 @@ A worker job is never marked succeeded merely because dispatch was requested. Un
 
 ## 2026-09-21 — Engineering memory
 Continuation state under docs/engineering is authoritative and updated after meaningful validated work.
+
+## 2026-09-21 — Phase 11-20 core boundaries
+Phases 11-20 are implemented as deployment-neutral service boundaries first. Concrete API/UI, persistence, Telegram, scheduler, provider and deployment adapters must remain replaceable and are not hidden inside the core domains.
+
+## 2026-09-21 — Controlled learning safety
+Learning suggestions are advisory by default. Approval is represented explicitly and learning code cannot silently change critical behavior.
+
+## 2026-09-21 — Backup integrity
+Backups are validated by deterministic payload hashing and manifest section checks before restore data is accepted.
+
+## 2026-09-21 — Multi-agent security
+Agent routing is subordinate to existing permission boundaries; an agent route cannot grant itself authorization.
