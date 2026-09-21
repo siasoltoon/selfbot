@@ -10,16 +10,16 @@ Status: COMPLETE
 Status: IN PROGRESS
 
 ### Completed
-- 2.1 Configuration, database foundation, logging and unified errors — COMPLETE and CI validated.
+- 2.1 Configuration, database foundation, logging and unified errors — CI validated.
+- 2.2 Event router, command registry, task manager and scheduler — CI validated.
 
 ### Current
-- 2.2 Event bus, command registry, task manager and scheduler.
+- 2.3 Plugin lifecycle boundary and core service wiring.
 
-### Later Phase 2 Scope
-- Telegram event adapter boundary
+### Remaining Phase 2 Scope
 - plugin lifecycle integration
 - broader domain models
-- full application startup/shutdown
+- application startup/shutdown
+- core service composition
+- Telegram event adapter boundary
 - additional persistence domains
-
-These must be implemented incrementally rather than bundled into unrelated work.
