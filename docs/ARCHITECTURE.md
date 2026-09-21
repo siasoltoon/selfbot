@@ -66,6 +66,49 @@ EVENT -> validate -> authorize -> route -> condition/use-case -> create task whe
 
 Heavy work should be deferred instead of blocking the Telegram event path.
 
+
+
+## 5.1 Event System
+Events use a normalized internal envelope containing event type, source, timestamp, correlation identifier, actor/chat identifiers when applicable, validated payload and metadata.
+
+The event router:
+- validates the envelope
+- resolves subscriptions/handlers
+- applies permission and safety gates
+- invokes application services
+- records failures without blocking unrelated handlers
+
+Telegram library event objects are never exposed as the core domain contract.
+
+## 5.2 Command System
+Commands are registered centrally with:
+- canonical name
+- aliases
+- argument schema
+- permission requirement
+- handler reference
+- help metadata
+- enabled/disabled state
+
+The registry validates arguments before invoking a handler.
+
+## 5.3 Task System
+Tasks have explicit lifecycle states:
+queued -> running -> succeeded
+queued -> deferred
+queued/running -> cancelled
+running -> failed
+running -> timed_out
+
+A task record contains type, owner/scope, input metadata, attempts, scheduling data, execution target and result/error classification.
+
+Task execution is idempotency-aware. Retries do not bypass authorization.
+
+## 5.4 Scheduler
+The scheduler creates durable task intents for one-time and recurring work. Scheduling state is persisted so a process restart does not silently erase pending work.
+
+Recurring schedules generate executions through the task manager rather than directly invoking feature code.
+
 ## 6. Deployment Model
 The architecture is deployment-neutral: the same application package is deployable in Railway, standard VPS, temporary/limited-runtime server environments and personal PC/Laptop.
 
