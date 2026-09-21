@@ -1,28 +1,29 @@
 # Test State
 
 ## Historical Green Runs
-- Phase 2 Task 2.4: run 35610034968 — PASS on Python 3.11/3.12.
-- Phase 3: run 35610333398 — PASS on Python 3.11/3.12.
-- Phase 4-10: run 35611024600 — PASS on Python 3.11/3.12.
-- Phase 11-20: run 35613550835 — PASS on Python 3.11/3.12.
+- Phase 2 Task 2.4: 35610034968 — PASS on Python 3.11/3.12.
+- Phase 3: 35610333398 — PASS on Python 3.11/3.12.
+- Phase 4-10: 35611024600 — PASS on Python 3.11/3.12.
+- Phase 11-20: 35613550835 — PASS on Python 3.11/3.12.
+- Phases 11-25 integration/hardening: 35614933655 — PASS on Python 3.11/3.12.
 
-## Current Sweep
-New focused tests cover:
-- CoreServices composition and durable domain state
-- OCR benchmark measurement
-- adversarial/failure handling
+## Verified Code-Side Coverage
+- service composition and durable domain state
+- migrations/schema definitions
+- OCR benchmark metric calculation
+- adversarial/failure harness
 - Persian RTL/English UX validation and bounded pagination
-- release audit evidence semantics
+- release evidence semantics
 
-## Required Before Final Release
-- full CI green
-- Alembic upgrade/downgrade smoke test
-- application startup/shutdown without Telegram credentials in safe test mode
-- Telegram integration with real test account
-- provider integration tests
-- worker transport/recovery tests
-- OCR benchmark against labeled real images
-- backup/restore round-trip
-- deployment/restart/rollback
+## Remaining External Verification
+- Alembic upgrade/downgrade smoke test against real target database
+- Telegram login/session and message flow
+- AI/STT/TTS/search providers
+- PC Worker transport/heartbeat/claim/retry/offline recovery
+- labeled OCR dataset benchmark
+- backup/restore round trip
+- deployment startup/health/restart/rollback
 - performance/load evidence
-- security/dependency audit
+- final security/dependency audit
+
+A phase remains non-final until its required evidence is recorded.
