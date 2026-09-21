@@ -57,7 +57,8 @@ class PluginManager:
             if node in visiting: raise DependencyError("circular plugin dependency detected",retryable=False)
             if node in visited:return
             visiting.add(node)
-            for dep in graph[node]:visit(dep)
+            for dep in graph[node]:
+                if dep in graph: visit(dep)
             visiting.remove(node);visited.add(node)
         for node in graph:visit(node)
     def get(self,plugin_id:str)->PluginRegistration:
