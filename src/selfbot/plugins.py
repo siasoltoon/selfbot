@@ -52,9 +52,6 @@ class PluginManager:
         self._validate_dependency_graph()
     def _validate_dependency_graph(self)->None:
         graph={k:set(v.manifest.dependencies) for k,v in self._plugins.items()}
-        for plugin,deps in graph.items():
-            missing=deps-set(graph)
-            if missing: raise DependencyError(f"plugin {plugin} has missing dependencies: {','.join(sorted(missing))}",retryable=False)
         visiting:set[str]=set(); visited:set[str]=set()
         def visit(node:str)->None:
             if node in visiting: raise DependencyError("circular plugin dependency detected",retryable=False)
