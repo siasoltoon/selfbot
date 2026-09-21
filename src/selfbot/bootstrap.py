@@ -24,7 +24,7 @@ def create_runtime() -> Runtime:
     configure_logging(settings.log_level)
     logger = get_logger(__name__)
     database = Database(settings.database_url, echo=settings.database_echo)
-    services = CoreServices.create(database)
+    services = CoreServices.create(database, owner_id=settings.owner_id)
     logger.info(
         "core runtime initialized",
         extra={"context": {"environment": settings.environment}},
