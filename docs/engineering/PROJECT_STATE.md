@@ -2,9 +2,9 @@
 
 ## Current Position
 - Phase: 2 — Core Foundation
-- Current task: 2.2 — Implement event bus, command registry, task manager and scheduler
+- Current task: 2.3 — Integrate plugin lifecycle boundary and core service wiring
 - Status: READY TO START
-- Last validated implementation: PR #3 CI run 35608388506
+- Last validated implementation: Task 2.2 PR #4, CI run 35608898926
 - CI result: Python 3.11 and 3.12 passed
 
 ## Completed
@@ -14,22 +14,23 @@ Bootstrap, configuration validation, tests, CI, repository hygiene, license and 
 ### Phase 1
 Technology stack, top-level architecture, event/command/task/scheduler boundaries, database design, plugin system, worker protocol, security model, API design and deployment neutrality.
 
-### Phase 2 / Task 2.1
-- centralized configuration validation
-- unified application error taxonomy
-- SQLAlchemy database/session foundation
-- bootstrap system metadata model
-- Alembic migration boundary and initial migration
-- structured secret-safe logging
-- deployment-neutral runtime bootstrap
-- targeted tests
+### Phase 2
+- 2.1 configuration, database foundation, logging and unified errors
+- 2.2 event router, command registry, durable task manager and scheduler
+
+## Task 2.2 Implementation
+- normalized EventEnvelope and EventRouter
+- command registry with aliases, validation and permission checker boundary
+- durable TaskRecord model and lifecycle manager
+- task migration
+- one-time/daily/weekly/cron/custom scheduling primitives
+- focused tests
 
 ## Validation
-- Local isolated migration test: PASS after fixing Alembic configuration.
-- GitHub Actions run 35608388506: PASS on Python 3.11 and 3.12.
+- GitHub Actions run 35608898926: PASS on Python 3.11 and 3.12.
 
 ## Known Limitations
-Telegram client, event bus, command registry, task manager, scheduler, plugin runtime, API and worker protocol are still not implemented.
+No Telegram adapter, plugin runtime, administration API or PC Worker runtime has been implemented yet.
 
 ## Exact Next Action
-Start Task 2.2 using the documented event/task architecture. Implement the smallest durable core event, command, task and scheduling abstractions, then test and validate before proceeding.
+Implement Task 2.3: plugin lifecycle boundary and core service wiring, preserving the existing event/command/task abstractions.
