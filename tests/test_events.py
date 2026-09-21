@@ -6,8 +6,7 @@ from selfbot.events import EventEnvelope, EventRouter
 from selfbot.errors import ValidationError
 
 
-@pytest.mark.asyncio
-async def test_event_router_dispatches_sync_and_async_handlers():
+def test_event_router_dispatches_sync_and_async_handlers():
     router = EventRouter()
     seen = []
 
@@ -27,7 +26,7 @@ async def test_event_router_dispatches_sync_and_async_handlers():
         payload={"text": "hello"},
     )
 
-    result = await router.dispatch(event)
+    result = asyncio.run(router.dispatch(event))
 
     assert result.handled == 2
     assert result.errors == ()
