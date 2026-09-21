@@ -4,7 +4,7 @@ A modular, secure and deployment-agnostic Telegram Personal AI Operating System.
 
 ## Status
 
-The repository is in the project bootstrap phase. Implementation proceeds incrementally from the engineering-memory state and is validated before each phase advances.
+Phase 0 bootstrap is complete and Phase 1 architecture design is in progress. Implementation proceeds incrementally from the engineering-memory state and is validated before each phase advances.
 
 ## Architecture
 

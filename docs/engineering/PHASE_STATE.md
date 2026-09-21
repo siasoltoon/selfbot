@@ -3,25 +3,27 @@
 ## Phase 0 — Project Bootstrap
 Status: COMPLETE
 
-Validation:
-- local compileall: PASS
-- local pytest: 3 passed
-- TOML parse: PASS
-- CI workflow YAML parse: PASS
-- GitHub Actions run 35607209926: PASS on Python 3.11 and 3.12
-
 ## Phase 1 — System Architecture Design
-Status: READY TO START
+Status: COMPLETE
 
-### Task 1.1
-Define technology stack and top-level application architecture based on the actual repository.
-
-### Required outputs
+### Completed Outputs
 - docs/ARCHITECTURE.md
 - docs/DATABASE_DESIGN.md
 - docs/PLUGIN_SYSTEM.md
 - docs/WORKER_ARCHITECTURE.md
 - docs/SECURITY_MODEL.md
 - docs/API_DESIGN.md
+- updated architecture map and decisions
 
-Do not implement later-phase functionality while completing this design task.
+### Validation
+- Required document presence: PASS
+- Cross-document consistency check: PASS
+- Phase 0 GitHub Actions CI: PASS on Python 3.11 and 3.12
+
+## Phase 2 — Core Foundation
+Status: READY TO START
+
+### Task 2.1
+Implement production configuration, database foundation and unified logging/error boundaries from the approved architecture.
+
+Do not implement Telegram Self Bot feature behavior or later-phase features in this task.

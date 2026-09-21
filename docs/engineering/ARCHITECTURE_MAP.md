@@ -1,39 +1,43 @@
 # Architecture Map
 
-## Current Implemented Foundation
+## Current Phase
+Phase 1 architecture design complete; Phase 2 implementation is next.
 
-```
-Environment
-    ↓
-Configuration Loader
-    ↓
-Future Core Services
-    ↓
-Telegram / Plugins / Tasks / Queue / Optional Worker
-```
+## Implemented Foundation
+- Python 3.11+ package foundation
+- environment-backed configuration
+- optional worker configuration
+- automated tests
+- GitHub Actions CI
 
-Only the configuration boundary is implemented in the current bootstrap.
+## Defined Architecture
+Telegram Client Adapter
+-> Event Router
+-> Core Application
+-> Command/Task/Scheduler Services
+-> Plugin Runtime
+-> Durable Persistence
+-> Local Worker / Optional PC Worker
+-> External Service Adapters
 
-## Deployment Boundary
-Core code must remain deployment-agnostic. Deployment-specific concerns belong in configuration, infrastructure, adapters and service definitions.
+Administration API:
+FastAPI -> Auth/Validation -> Core Services -> Persistence/Adapters
 
-Supported targets:
-- Railway
-- Standard VPS
-- Limited-runtime/temporary server
-- Personal PC/Laptop
+## Planned Persistence
+- SQLAlchemy 2.x
+- Alembic migrations
+- SQLite local/default
+- PostgreSQL production-capable option
 
-## Planned Modular Boundaries
-- Telegram client adapter
-- Event router
-- Core services
-- Database/storage
-- Command registry
-- Task manager
-- Scheduler
-- Plugin runtime
-- Optional PC Worker protocol
-- External service adapters
-- Administration API/dashboard
+## Planned Integration Boundaries
+- Telethon Telegram adapter
+- FastAPI API adapter
+- authenticated PC Worker protocol
+- plugin lifecycle/manifest boundary
+- repository/unit-of-work persistence boundary
 
-No feature-specific implementation is claimed until its phase is completed and validated.
+## Deployment
+Deployment-neutral core supporting Railway, VPS, temporary/limited-runtime environments and personal PC/Laptop. Provider-specific behavior belongs in infrastructure/configuration.
+
+## Status
+Architecture is documented; implementation begins in Phase 2.
