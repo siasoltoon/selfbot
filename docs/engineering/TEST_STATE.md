@@ -1,24 +1,17 @@
 # Test State
 
-## Latest Validation
+## Latest Local Validation
 Date: 2026-09-21
 
-### Configuration Unit Tests
-- Result: PASS
-- Tests: 3 passed
-- Scope:
-  - default settings
-  - worker endpoint requirement
-  - invalid boolean rejection
+- Python compileall on src/tests: PASS
+- pytest: PASS — 3 passed
+- pyproject.toml parse: PASS
+- GitHub Actions workflow YAML parse: PASS
 
-### Static/Import Validation
-- Python source was executed through pytest in an isolated environment with the authored package on PYTHONPATH.
-- Result: PASS for the tested bootstrap module.
+## Remote Validation
+- GitHub Actions workflow configured in `.github/workflows/ci.yml`.
+- PR-triggered run is required before Phase 0 is considered fully validated.
+- No production-readiness claim is made.
 
-### Repository Runtime / CI
-- Repository checkout from this environment: BLOCKED by unavailable outbound GitHub DNS/network.
-- GitHub Actions CI: not yet configured.
-- No claim of full repository runtime validation is made.
-
-## Next Validation
-Run repository CI after the workflow is added; then extend validation as Phase 1 introduces architecture documents and executable components.
+## Scope
+Current tests cover only the bootstrap configuration boundary. Feature-specific tests will be added with each implementation phase.
