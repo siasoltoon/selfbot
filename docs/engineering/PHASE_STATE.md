@@ -8,58 +8,84 @@ Status: COMPLETE
 
 ## Phase 2 — Core Foundation
 Status: COMPLETE through Task 2.4
-- 2.1 configuration/database/logging/errors
-- 2.2 events/commands/tasks/scheduler
-- 2.3 plugin lifecycle/service composition
-- 2.4 Telegram adapter boundary and graceful application lifecycle
 
 ## Phase 3 — Plugin System
 Status: COMPLETE
-- manifest/version/API compatibility
-- capabilities and configuration schema boundary
-- lifecycle and permission enforcement
-- dependency validation and circular dependency rejection
 
 ## Phase 4 — Telegram Self Bot Core
-Status: CORE LAYER IMPLEMENTED; INTEGRATION REMAINS
-- owner-gated status/ping/identity/profile/block use cases
-- Telethon adapter boundary exists
-- broader Telegram command/event integration remains
+Status: CORE LAYER IMPLEMENTED; INTEGRATION/REAL TESTING REMAINS
 
 ## Phase 5 — Automation Features
-Status: CORE LAYER IMPLEMENTED; INTEGRATION REMAINS
-- event rules, keyword matching, cooldowns
-- saved content search and text formatting
-- broader Telegram automation actions remain
+Status: CORE LAYER IMPLEMENTED; INTEGRATION/REAL TESTING REMAINS
 
 ## Phase 6 — Game and Economy
-Status: CORE LAYER IMPLEMENTED; INTEGRATION REMAINS
-- isolated wallet/game primitives
-- concrete external game integrations remain plugin-specific
+Status: CORE LAYER IMPLEMENTED; INTEGRATION/REAL TESTING REMAINS
 
 ## Phase 7 — AI Personal Assistant
-Status: CORE LAYER IMPLEMENTED; PROVIDERS/INTEGRATION REMAIN
-- provider-neutral AI contract
-- memory save/search/update/forget
-- chat/summarize/translate orchestration
+Status: CORE LAYER IMPLEMENTED; PROVIDERS/INTEGRATION/REAL TESTING REMAIN
 
 ## Phase 8 — Web Intelligence
-Status: CORE LAYER IMPLEMENTED; SEARCH/INTEGRATION REMAINS
-- safe HTTPS retrieval boundary
-- size limits and private/local destination blocking
-- pluggable search provider contract remains unconfigured
+Status: CORE LAYER IMPLEMENTED; SEARCH/INTEGRATION/REAL TESTING REMAIN
 
 ## Phase 9 — Voice Assistant
-Status: CORE LAYER IMPLEMENTED; PROVIDERS/INTEGRATION REMAIN
-- STT/TTS contracts and validation
-- Telegram voice/media integration remains
+Status: CORE LAYER IMPLEMENTED; PROVIDERS/INTEGRATION/REAL TESTING REMAIN
 
 ## Phase 10 — Advanced PC Worker
-Status: CORE LAYER IMPLEMENTED; TRANSPORT/DURABILITY HARDENING REMAINS
-- authenticated registry
-- capabilities
-- heartbeat/offline detection
-- job states
-- local execution
-- retry/timeout/cancellation boundaries
-- durable queue/HTTP transport integration remains
+Status: CORE LAYER IMPLEMENTED; TRANSPORT/DURABILITY/REAL TESTING REMAIN
+
+## Phase 11 — Web Admin Panel
+Status: CORE CAPABILITY IMPLEMENTED; API/UI/PERSISTENCE INTEGRATION REMAINS
+- owner-gated admin snapshot
+- controlled plugin admin actions
+- resource metrics hook
+
+## Phase 12 — Controlled Self-Learning
+Status: CORE CAPABILITY IMPLEMENTED; PERSISTENCE/RUNTIME INTEGRATION REMAINS
+- observations
+- usage aggregation
+- approval-gated suggestions
+
+## Phase 13 — Advanced Automation Engine
+Status: CORE CAPABILITY IMPLEMENTED; PERSISTENCE/RUNTIME ACTION INTEGRATION REMAINS
+- event/condition/action execution
+- explicit workflow results and errors
+
+## Phase 14 — Smart Reminder System
+Status: CORE CAPABILITY IMPLEMENTED; SCHEDULER/TELEGRAM/PERSISTENCE INTEGRATION REMAINS
+- one-time and recurrence data model
+- timezone-aware validation
+- lifecycle operations
+
+## Phase 15 — Advanced Security
+Status: CORE CAPABILITY IMPLEMENTED; SESSION/TELEGRAM AUDIT INTEGRATION REMAINS
+- owner/trusted-user boundary
+- emergency lock and recovery
+- security event recording
+
+## Phase 16 — Backup and Restore
+Status: CORE CAPABILITY IMPLEMENTED; DATABASE SNAPSHOT/FILE STORAGE INTEGRATION REMAINS
+- deterministic JSON export
+- checksum manifest
+- validation before restore
+
+## Phase 17 — Analytics and Monitoring
+Status: CORE CAPABILITY IMPLEMENTED; RUNTIME TELEMETRY INTEGRATION REMAINS
+- counters
+- duration aggregation
+- snapshot export
+
+## Phase 18 — Smart Storage
+Status: CORE CAPABILITY IMPLEMENTED; TELEGRAM FILE/MEDIA PERSISTENCE INTEGRATION REMAINS
+- typed metadata
+- owner-scoped search
+- archive lifecycle
+
+## Phase 19 — Multi-Agent AI
+Status: CORE CAPABILITY IMPLEMENTED; PROVIDER/AI ROUTING INTEGRATION REMAINS
+- common agent protocol
+- permission-gated routing
+
+## Phase 20 — Database and Storage Hardening
+Status: CORE POLICY IMPLEMENTED; DOMAIN MIGRATIONS/INDEXES/PERSISTENCE HARDENING REMAINS
+- validated storage policy
+- explicit retention/payload/timezone constraints
