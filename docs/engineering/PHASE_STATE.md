@@ -6,24 +6,20 @@ Status: COMPLETE
 ## Phase 1 — System Architecture Design
 Status: COMPLETE
 
-### Completed Outputs
-- docs/ARCHITECTURE.md
-- docs/DATABASE_DESIGN.md
-- docs/PLUGIN_SYSTEM.md
-- docs/WORKER_ARCHITECTURE.md
-- docs/SECURITY_MODEL.md
-- docs/API_DESIGN.md
-- updated architecture map and decisions
-
-### Validation
-- Required document presence: PASS
-- Cross-document consistency check: PASS
-- Phase 0 GitHub Actions CI: PASS on Python 3.11 and 3.12
-
 ## Phase 2 — Core Foundation
-Status: READY TO START
+Status: IN PROGRESS
 
-### Task 2.1
-Implement production configuration, database foundation and unified logging/error boundaries from the approved architecture.
+### Completed
+- 2.1 Configuration, database foundation, logging and unified errors — COMPLETE and CI validated.
 
-Do not implement Telegram Self Bot feature behavior or later-phase features in this task.
+### Current
+- 2.2 Event bus, command registry, task manager and scheduler.
+
+### Later Phase 2 Scope
+- Telegram event adapter boundary
+- plugin lifecycle integration
+- broader domain models
+- full application startup/shutdown
+- additional persistence domains
+
+These must be implemented incrementally rather than bundled into unrelated work.
