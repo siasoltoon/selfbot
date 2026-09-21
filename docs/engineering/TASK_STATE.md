@@ -1,22 +1,24 @@
 # Task State
 
 ## Active Task
-Phase 1 / Task 1.1 — Technology stack and top-level application architecture.
+Phase 2 / Task 2.1 — Core foundation: configuration, database foundation, logging and unified errors.
 
 ## Status
 READY TO START
 
-## Previous Task
-Phase 0 bootstrap completed and validated.
+## Previous Completed Tasks
+- Phase 0 bootstrap
+- Phase 1 system architecture design
 
 ## Previous Validation
-- compileall: PASS
-- pytest: 3 passed
-- CI run 35607209926: PASS for Python 3.11 and 3.12
+- Phase 0 CI run 35607209926: PASS on Python 3.11 and 3.12
+- Phase 1 architecture consistency check: PASS
 
 ## Next Exact Work
-1. Inspect the current bootstrap files only.
-2. Define the technology stack and architectural boundaries.
-3. Create the six required Phase 1 architecture documents.
-4. Validate documentation consistency against the master specification and deployment/worker requirements.
-5. Update engineering memory and commit.
+1. Inspect the existing config foundation and Phase 1 architecture docs.
+2. Extend configuration safely without breaking existing environment behavior.
+3. Introduce the database abstraction and migration boundary.
+4. Introduce structured logging and a unified error taxonomy.
+5. Add targeted unit/integration tests.
+6. Run CI.
+7. Update engineering memory and commit.
