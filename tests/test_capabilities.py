@@ -33,7 +33,7 @@ def test_automation_keyword_and_cooldown():
 
 def test_content_and_game_boundaries():
     store=ContentStore(); store.save(SavedContent("1","text","Hello World",("greeting",)))
-    assert store.search("hello")[0].content=="Hello World"
+    assert store.search("hello")[0].body=="Hello World"
     assert ContentStore.format_text("x","bold")=="**x**"
     game=GameEngine(); assert game.award("u",10)==10
     assert game.buy("u",4)==6
