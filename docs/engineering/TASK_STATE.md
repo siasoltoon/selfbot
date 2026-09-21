@@ -1,24 +1,28 @@
 # Task State
 
 ## Active Task
-Phase 2 / Task 2.1 — Core foundation: configuration, database foundation, logging and unified errors.
+Phase 2 / Task 2.2 — Event bus, command registry, task manager and scheduler.
 
 ## Status
 READY TO START
 
-## Previous Completed Tasks
-- Phase 0 bootstrap
-- Phase 1 system architecture design
+## Completed
+Task 2.1:
+- configuration validation
+- database/session boundary
+- Alembic migration boundary
+- structured logging
+- unified error taxonomy
+- runtime bootstrap
 
-## Previous Validation
-- Phase 0 CI run 35607209926: PASS on Python 3.11 and 3.12
-- Phase 1 architecture consistency check: PASS
+## Validation
+- GitHub Actions run 35608388506: PASS on Python 3.11 and 3.12.
+- Migration test passed after Alembic configuration fix.
 
 ## Next Exact Work
-1. Inspect the existing config foundation and Phase 1 architecture docs.
-2. Extend configuration safely without breaking existing environment behavior.
-3. Introduce the database abstraction and migration boundary.
-4. Introduce structured logging and a unified error taxonomy.
-5. Add targeted unit/integration tests.
-6. Run CI.
-7. Update engineering memory and commit.
+1. Implement normalized internal event envelope and router.
+2. Implement command registry with aliases, argument validation and permissions boundary.
+3. Implement durable task lifecycle service using the database boundary.
+4. Implement scheduler primitives that create task intents rather than executing feature logic directly.
+5. Add targeted tests and failure-path coverage.
+6. Run CI, update engineering memory and commit.

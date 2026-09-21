@@ -1,43 +1,34 @@
 # Architecture Map
 
 ## Current Phase
-Phase 1 architecture design complete; Phase 2 implementation is next.
+Phase 2 core foundation.
 
-## Implemented Foundation
+## Implemented
 - Python 3.11+ package foundation
-- environment-backed configuration
-- optional worker configuration
-- automated tests
-- GitHub Actions CI
+- validated environment configuration
+- unified error taxonomy
+- SQLAlchemy engine/session boundary
+- Alembic migration boundary
+- bootstrap metadata model
+- structured secret-safe logging
+- deployment-neutral runtime bootstrap
+- automated tests and CI
 
-## Defined Architecture
-Telegram Client Adapter
--> Event Router
--> Core Application
--> Command/Task/Scheduler Services
--> Plugin Runtime
--> Durable Persistence
--> Local Worker / Optional PC Worker
--> External Service Adapters
+## Defined
+Telegram Client Adapter -> Event Router -> Core Application -> Command/Task/Scheduler Services -> Plugin Runtime -> Durable Persistence -> Local Worker / Optional PC Worker -> External Service Adapters
 
 Administration API:
 FastAPI -> Auth/Validation -> Core Services -> Persistence/Adapters
 
-## Planned Persistence
-- SQLAlchemy 2.x
-- Alembic migrations
-- SQLite local/default
-- PostgreSQL production-capable option
-
-## Planned Integration Boundaries
-- Telethon Telegram adapter
-- FastAPI API adapter
-- authenticated PC Worker protocol
-- plugin lifecycle/manifest boundary
-- repository/unit-of-work persistence boundary
+## Next Implementation Boundaries
+- normalized internal event envelope
+- command registry
+- durable task lifecycle
+- scheduler
+- plugin lifecycle
+- Telegram adapter
+- API
+- worker protocol
 
 ## Deployment
-Deployment-neutral core supporting Railway, VPS, temporary/limited-runtime environments and personal PC/Laptop. Provider-specific behavior belongs in infrastructure/configuration.
-
-## Status
-Architecture is documented; implementation begins in Phase 2.
+Deployment-neutral core supporting Railway, VPS, temporary/limited-runtime environments and personal PC/Laptop. Provider-specific behavior remains in infrastructure/configuration.

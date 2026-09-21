@@ -1,19 +1,25 @@
-from selfbot.config import ConfigurationError, load_settings
+from selfbot.config import load_settings
+from selfbot.errors import ConfigurationError
 
 
 def test_defaults(monkeypatch):
-    monkeypatch.delenv("SELF_BOT_ENV", raising=False)
-    monkeypatch.delenv("LOG_LEVEL", raising=False)
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("PC_WORKER_ENABLED", raising=False)
-    monkeypatch.delenv("PC_WORKER_URL", raising=False)
-    monkeypatch.delenv("PC_WORKER_TOKEN", raising=False)
+    for key in [
+        "SELF_BOT_ENV",
+        "LOG_LEVEL",
+        "DATABASE_URL",
+        "DATABASE_ECHO",
+        "PC_WORKER_ENABLED",
+        "PC_WORKER_URL",
+        "PC_WORKER_TOKEN",
+    ]:
+        monkeypatch.delenv(key, raising=False)
 
     settings = load_settings()
 
     assert settings.environment == "development"
     assert settings.log_level == "INFO"
     assert settings.database_url.startswith("sqlite://")
+    assert settings.database_echo is False
     assert settings.pc_worker_enabled is False
 
 
@@ -25,6 +31,7 @@ def test_worker_requires_endpoint(monkeypatch):
     try:
         load_settings()
     except ConfigurationError as exc:
+        assert exc.code == "configuration"
         assert "PC_WORKER_URL" in str(exc)
     else:
         raise AssertionError("expected ConfigurationError")
@@ -37,5 +44,16 @@ def test_invalid_boolean(monkeypatch):
         load_settings()
     except ConfigurationError as exc:
         assert "PC_WORKER_ENABLED" in str(exc)
+    else:
+        raise AssertionError("expected ConfigurationError")
+
+
+def test_invalid_database_scheme(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "mysql://example")
+
+    try:
+        load_settings()
+    except ConfigurationError as exc:
+        assert "SQLite or PostgreSQL" in str(exc)
     else:
         raise AssertionError("expected ConfigurationError")

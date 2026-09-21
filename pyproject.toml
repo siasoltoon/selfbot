@@ -8,11 +8,18 @@ version = "0.1.0"
 description = "Modular Telegram Personal AI Operating System"
 requires-python = ">=3.11"
 readme = "README.md"
-dependencies = []
+dependencies = [
+    "SQLAlchemy>=2,<3",
+    "alembic>=1.13,<2",
+]
 
 [project.optional-dependencies]
+postgres = [
+    "psycopg[binary]>=3.2,<4",
+]
 test = [
     "pytest>=8,<9",
+    "pytest-cov>=5,<7",
 ]
 
 [tool.pytest.ini_options]
