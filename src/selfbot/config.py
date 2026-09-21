@@ -1,13 +1,11 @@
-"""Environment-backed configuration for the application foundation."""
+"""Environment-backed configuration for the application."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
 
-
-class ConfigurationError(ValueError):
-    """Raised when configuration is invalid."""
+from .errors import ConfigurationError
 
 
 def _bool_env(name: str, default: bool = False) -> bool:
@@ -27,6 +25,7 @@ class Settings:
     environment: str
     log_level: str
     database_url: str
+    database_echo: bool
     telegram_api_id: str | None
     telegram_api_hash: str | None
     telegram_session: str | None
@@ -47,6 +46,8 @@ def load_settings() -> Settings:
     database_url = os.getenv("DATABASE_URL", "sqlite:///./data/selfbot.db").strip()
     if not database_url:
         raise ConfigurationError("DATABASE_URL must not be empty")
+    if not database_url.startswith(("sqlite://", "postgresql://", "postgresql+")):
+        raise ConfigurationError("DATABASE_URL must use SQLite or PostgreSQL")
 
     worker_enabled = _bool_env("PC_WORKER_ENABLED", False)
     worker_url = os.getenv("PC_WORKER_URL")
@@ -61,6 +62,7 @@ def load_settings() -> Settings:
         environment=environment,
         log_level=log_level,
         database_url=database_url,
+        database_echo=_bool_env("DATABASE_ECHO", False),
         telegram_api_id=os.getenv("TELEGRAM_API_ID") or None,
         telegram_api_hash=os.getenv("TELEGRAM_API_HASH") or None,
         telegram_session=os.getenv("TELEGRAM_SESSION") or None,
