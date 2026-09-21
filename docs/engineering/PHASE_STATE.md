@@ -1,25 +1,18 @@
 # Phase State
 
-## Phase 0 — Project Bootstrap
-Status: COMPLETE
-
-## Phase 1 — System Architecture Design
-Status: COMPLETE
-
 ## Phase 2 — Core Foundation
 Status: IN PROGRESS
 
 ### Completed
-- 2.1 Configuration, database foundation, logging and unified errors — CI validated.
-- 2.2 Event router, command registry, task manager and scheduler — CI validated.
+- 2.1 Configuration/database/logging/errors — validated.
+- 2.2 Events/commands/tasks/scheduler — validated.
+- 2.3 Plugin lifecycle/service composition — validated.
 
 ### Current
-- 2.3 Plugin lifecycle boundary and core service wiring.
+- 2.4 Telegram adapter boundary and startup/shutdown lifecycle.
 
-### Remaining Phase 2 Scope
-- plugin lifecycle integration
-- broader domain models
-- application startup/shutdown
-- core service composition
-- Telegram event adapter boundary
-- additional persistence domains
+### Remaining
+- Telegram event adapter
+- application lifecycle
+- broader domain persistence
+- later Phase 3 plugin implementation work
