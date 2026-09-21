@@ -1,28 +1,22 @@
 # Task State
 
 ## Active Task
-Phase 0 final CI validation / transition to Phase 1.
+Phase 1 / Task 1.1 — Technology stack and top-level application architecture.
 
 ## Status
-READY FOR PR VALIDATION
+READY TO START
 
-## Completed
-- Bootstrap foundation.
-- Configuration boundary and tests.
-- Deployment-neutral worker configuration.
-- CI workflow.
-- Engineering memory.
-- License and repository hygiene.
+## Previous Task
+Phase 0 bootstrap completed and validated.
 
-## Validation
+## Previous Validation
 - compileall: PASS
 - pytest: 3 passed
-- TOML parse: PASS
-- CI YAML parse: PASS
+- CI run 35607209926: PASS for Python 3.11 and 3.12
 
-## Remaining
-- Verify GitHub Actions on the pull request.
-- After green CI, begin Phase 1 Task 1.1.
-
-## Blockers
-No implementation blocker. External network access from this execution environment is unavailable, so direct repository checkout cannot be used for local execution.
+## Next Exact Work
+1. Inspect the current bootstrap files only.
+2. Define the technology stack and architectural boundaries.
+3. Create the six required Phase 1 architecture documents.
+4. Validate documentation consistency against the master specification and deployment/worker requirements.
+5. Update engineering memory and commit.
