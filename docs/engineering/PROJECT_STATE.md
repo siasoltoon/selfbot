@@ -1,38 +1,29 @@
 # Project State
 
 ## Current Position
-- Phase: 0 — Project Bootstrap
-- Current task: 0.3 — Finalize Phase 0 documentation and transition to Phase 1
-- Status: READY FOR PHASE TRANSITION
-- Last validated implementation commit: `2bf21303ad44b9d6b6d7a924c451f87f86d15f70`
-- Working branch: `feat/project-bootstrap`
+- Phase: 1 — System Architecture Design
+- Current task: 1.1 — Define technology stack and top-level application architecture
+- Status: READY TO START
+- Last validated commit: `d3bba42d2fe7526c9524c7bbc921774d7c193fe9`
+- Bootstrap PR: #1
+- Bootstrap CI run: `35607209926` — Python 3.11 and 3.12 jobs passed
 
-## Repository Baseline
-At continuation start, the repository contained only the initial README and `docs/MASTER_PROMPT.md`. The required engineering-memory files did not exist, so continuation state was initialized from actual repository history.
+## Completed Phase
+Phase 0 — Project Bootstrap
+- repository foundation
+- deployment-neutral configuration boundary
+- optional worker configuration
+- initial tests
+- CI
+- repository hygiene
+- engineering memory
+- license
 
-## Completed
-- Repository baseline inspected.
-- Master engineering specification preserved.
-- Python 3.11+ foundation established.
-- Environment-backed configuration with validation added.
-- Optional PC Worker configuration boundary added without making worker availability mandatory.
-- Repository hygiene files added.
-- Initial unit tests added.
-- GitHub Actions CI workflow added for Python 3.11 and 3.12.
-- MIT license added.
-- Persistent engineering memory initialized and synchronized.
+## Current Phase
+Phase 1 — System Architecture Design.
 
-## Validation
-- Python compileall: PASS.
-- pytest: 3 passed.
-- pyproject TOML parsing: PASS.
-- CI workflow YAML parsing: PASS.
-- Repository-side CI is configured; PR execution remains the final remote validation gate.
+## Exact Next Action
+Define and document the technology stack and top-level application architecture from the actual bootstrap repository. Then add the required Phase 1 architecture documents without implementing later-phase features prematurely.
 
 ## Known Limitations
-- Telegram client and all later roadmap capabilities are not implemented yet.
-- Repository checkout from this environment is unavailable because outbound GitHub DNS/network access is disabled.
-- Full runtime validation therefore relies on local isolated validation plus repository CI.
-
-## Next Exact Action
-Complete the Phase 0 PR validation. If CI passes, start Phase 1 / Task 1.1: define and document the technology stack and top-level application architecture.
+No Telegram client, database runtime, plugin runtime, worker protocol, dashboard or AI feature is implemented yet. These belong to later phases.
