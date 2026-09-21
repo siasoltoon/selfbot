@@ -7,16 +7,16 @@ Bootstrap foundation, configuration validation, tests, CI, repository hygiene, l
 Technology stack and deployment-neutral architecture documented. Database, plugin, worker, security and API design documents added. Event/command/task/scheduler boundaries defined.
 
 ## 2026-09-21 — Phase 2 Task 2.1
-- Centralized configuration validation.
-- Added unified application error taxonomy.
-- Added SQLAlchemy database/session boundary.
-- Added system metadata ORM model.
-- Added Alembic migration environment and initial migration.
-- Added structured secret-safe logging.
-- Added deployment-neutral runtime bootstrap.
-- Added targeted tests.
-- Fixed Alembic configuration path parsing after validation failure.
-- GitHub Actions run 35608388506 passed on Python 3.11 and 3.12.
+Configuration, persistence foundation, Alembic migrations, structured logging, unified errors and runtime bootstrap implemented and CI validated.
+
+## 2026-09-21 — Phase 2 Task 2.2
+- normalized event envelope/router
+- command registry with validation and permission boundary
+- durable task model/lifecycle
+- scheduler primitives
+- task migration
+- focused tests
+- GitHub Actions run 35608898926 passed on Python 3.11 and 3.12
 
 ## Next
-Phase 2 / Task 2.2 — event bus, command registry, task manager and scheduler.
+Phase 2 / Task 2.3 — plugin lifecycle boundary and core service wiring.
