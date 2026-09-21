@@ -1,22 +1,17 @@
 # Test State
 
 ## Latest Validation
-- Phase 0 CI: PASS on Python 3.11 and 3.12.
-- Phase 1 architecture consistency: PASS.
-- Task 2.1 CI run 35608388506: PASS on Python 3.11 and 3.12.
-- Task 2.2 CI run 35608898926: PASS on Python 3.11 and 3.12.
+- Task 2.1 CI run 35608388506: PASS.
+- Task 2.2 CI run 35608898926: PASS.
+- Task 2.3 CI run 35609251101: PASS on Python 3.11 and 3.12.
 
 ## Current Coverage
-- configuration validation
-- error classification
-- structured logging/redaction
-- database/session/ORM persistence
-- Alembic migration chain
-- runtime bootstrap
-- event routing
-- command validation/permissions
-- task lifecycle/retry/cancellation
-- scheduler primitives
+Configuration, errors, logging, database, migrations, runtime bootstrap, events, commands, tasks, scheduler, plugin lifecycle and service composition.
 
 ## Next Tests
-Task 2.3 must cover plugin manifest validation, lifecycle transitions, duplicate registration, permission boundaries and core service wiring.
+Task 2.4 must cover:
+- Telegram adapter import/configuration boundaries
+- startup ordering
+- shutdown cleanup
+- repeated startup/shutdown behavior
+- safe failure when Telegram credentials are absent

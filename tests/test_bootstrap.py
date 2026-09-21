@@ -10,3 +10,5 @@ def test_create_runtime(monkeypatch, tmp_path):
 
     assert runtime.settings.environment == "test"
     assert runtime.database.ping() is True
+    assert runtime.services.database is runtime.database
+    assert runtime.services.tasks.database is runtime.database
