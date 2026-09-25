@@ -44,7 +44,7 @@ def test_scheduler_creates_durable_task(tmp_path):
         "reminder",
         ScheduleSpec(
             kind=ScheduleKind.ONCE,
-            run_at=datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc),
+            run_at=datetime(2027, 1, 1, 12, 0, tzinfo=timezone.utc),
         ),
     )
 

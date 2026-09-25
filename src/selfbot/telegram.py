@@ -37,9 +37,13 @@ class TelegramAdapter:
         if self._client_factory is not None: return self._client_factory(self.settings)
         try:
             from telethon import TelegramClient as TelethonClient
+            from telethon.sessions import StringSession
         except ImportError as exc:
             raise DependencyError("Telethon is not installed; Telegram integration is unavailable", retryable=False) from exc
-        return TelethonClient(self.settings.telegram_session or "selfbot", int(self.settings.telegram_api_id), self.settings.telegram_api_hash)
+        session: Any = self.settings.telegram_session or "selfbot"
+        if self.settings.telegram_session and self.settings.telegram_session_is_string:
+            session = StringSession(self.settings.telegram_session)
+        return TelethonClient(session, int(self.settings.telegram_api_id), self.settings.telegram_api_hash)
     async def start(self) -> None:
         if self._started: return
         self._validate_credentials()
