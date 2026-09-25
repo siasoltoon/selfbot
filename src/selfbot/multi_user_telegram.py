@@ -378,10 +378,7 @@ class TelegramAuthenticationService:
                 exc_info=True,
             )
             self._pending_qr.pop(owner_user_id, None)
-            try:
-                await item.client.disconnect()
-            except Exception:
-                pass
+            await self._abort_authenticated_client(item.client)
             return "failed"
         try:
             await self._finalize_client(owner_user_id, item.client)
@@ -681,7 +678,13 @@ class TelegramAuthenticationService:
         session = client.session.save()
         if not isinstance(session, str) or not session.strip():
             raise DependencyError("Telegram login succeeded but a persistent StringSession was unavailable", retryable=False)
-        self.store.save(owner_user_id, account_id, session)
+        try:
+            self.store.save(owner_user_id, account_id, session)
+        except Exception as exc:
+            raise DependencyError(
+                "Telegram login succeeded but durable session storage failed",
+                retryable=True,
+            ) from exc
         await client.disconnect()
         return account_id
 
@@ -945,8 +948,14 @@ class OnboardingBot:
         if self._states.get(user_id) == "qr_password":
             try:
                 account_id = await self.auth.verify_qr_2fa(user_id, text)
-            except Exception:
-                await event.reply("رمز دومرحله‌ای نامعتبر است یا ورود کامل نشد. /connect را دوباره اجرا کن.")
+            except Exception as exc:
+                if type(exc).__name__ == "PasswordHashInvalidError":
+                    message = "رمز دومرحله‌ای نادرست است. /connect را دوباره اجرا کن."
+                elif isinstance(exc, DependencyError):
+                    message = "ورود تلگرام تأیید شد، اما ذخیره امن نشست انجام نشد و نشست تأییدشده لغو شد. /connect را دوباره اجرا کن."
+                else:
+                    message = "تکمیل ورود تلگرام ناموفق بود. /connect را دوباره اجرا کن."
+                await event.reply(message)
                 self._states.pop(user_id, None)
                 return
             self._states.pop(user_id, None)
