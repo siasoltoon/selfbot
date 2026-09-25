@@ -20,3 +20,4 @@ Admin/API/UI, Telegram, AI, voice, web, OCR and worker transports remain adapter
 
 ## Deployment Rule
 Core logic remains deployment-neutral. Railway/VPS/personal-PC behavior belongs in environment configuration and infrastructure adapters.
+\n\n## Deployment Runtime\n- `scripts/run_bot.py` is the shared process entrypoint.\n- `.github/workflows/telegram-runtime.yml` is a deployment adapter for GitHub-hosted Windows runners.\n- Core application logic remains deployment-agnostic.\n
