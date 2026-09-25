@@ -17,12 +17,18 @@
 
 ## Telegram Expiry Recovery Verification
 - PR #16 CI run 36184453774 — PASS on Python 3.11 and 3.12.
-- Coverage includes fresh-client resend after `PhoneCodeExpiredError`, pending-state preservation, code-attempt lifecycle metadata, and safe recovery cleanup.
-- Real Telegram resend/login remains environment-dependent and is not marked PASS.
+- Coverage includes recoverable expiry/invalid-code state handling and resend lifecycle.
 - PR #17 CI run 36185340785 — PASS on Python 3.11 and 3.12; both compile and pytest steps completed successfully.
+- Real Telegram code-in-chat onboarding was not accepted as production flow after repeated `PhoneCodeExpiredError`.
+
+## QR Verification
 - PR #18 CI run 36186445250 — PASS on Python 3.11 and 3.12; compile and pytest completed successfully.
 - PR #18 adds QR lifecycle tests for PNG generation, successful persistence, 2FA continuation, and cancellation/cleanup.
-- Real Telegram QR onboarding remains NOT PASS until operator evidence is recorded.
+- Real QR test reached Telegram acceptance and 2FA but failed before completion because the original QR TTL also governed the post-scan transient client lifetime.
+- PR #19 CI run 36187266466 — PASS on Python 3.11 and 3.12; compile and pytest completed successfully.
+- PR #19 regression test uses a 1-second QR TTL and 5-second service TTL, verifies the post-scan expiry is extended, and completes the simulated 2FA flow.
+- PR #19 was merged to main as 76a4e9d2887f1bebfee9eb0c5b5c5f5486294787.
+- Real Telegram QR+2FA onboarding remains NOT PASS until the operator reruns the external flow successfully.
 
 ## Remaining External Verification
 - Real Telegram login/session and message flow
