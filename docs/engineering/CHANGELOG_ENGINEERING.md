@@ -15,3 +15,4 @@
 
 ## Final Gate
 Only environment-dependent verification remains before final release: real Telegram/providers/worker/OCR dataset/deployment/performance/backup/recovery/security evidence.
+\n\n## 2026-09-25 — GitHub Actions Runtime\n- Added shared bot process entrypoint.\n- Added manual Windows GitHub Actions runtime workflow with migrations and secure environment injection.\n- Added Telegram StringSession support.\n- Reviewed `siasoltoon/vps`; copied the Windows-runner deployment pattern only, excluding hardcoded credentials and insecure RDP configuration.\n- CI 36177272784 passed on Python 3.11/3.12.\n
