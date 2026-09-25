@@ -1,7 +1,5 @@
 """Encryption for long-lived Telegram sessions."""
 from __future__ import annotations
-import base64
-import hashlib
 from .errors import ConfigurationError, ValidationError
 
 class SessionCipher:
@@ -17,8 +15,7 @@ class SessionCipher:
     def encrypt(self, session: str) -> str:
         if not session:
             raise ValidationError("session must not be empty")
-        from cryptography.fernet import Fernet
-        return Fernet(self._fernet._signing_key + self._fernet._encryption_key).encrypt(session.encode()).decode()
+        return self._fernet.encrypt(session.encode()).decode()
 
     def decrypt(self, token: str) -> str:
         if not token:
