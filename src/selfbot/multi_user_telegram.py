@@ -33,6 +33,7 @@ class AuthClient(Protocol):
     async def send_code_request(self, phone: str) -> Any: ...
     async def sign_in(self, phone: str | None = None, code: str | None = None, *, password: str | None = None, phone_code_hash: str | None = None) -> Any: ...
     async def get_me(self) -> Any: ...
+    async def is_user_authorized(self) -> bool: ...
 
 
 @dataclass(slots=True)
@@ -275,9 +276,14 @@ class MultiUserTelegramRuntime:
             session = self.store.decrypt(record)
             client = self._new_client(session, int(api_id), api_hash)
             try:
-                result = client.start()
+                result = client.connect()
                 if inspect.isawaitable(result):
                     await result
+                authorized = client.is_user_authorized()
+                if inspect.isawaitable(authorized):
+                    authorized = await authorized
+                if not authorized:
+                    raise DependencyError("stored account is not authorized", retryable=False)
                 client.add_event_handler(self._handler(record.owner_user_id, record.telegram_account_id))
                 self._clients[record.telegram_account_id] = client
             except Exception:
