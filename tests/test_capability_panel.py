@@ -8,7 +8,7 @@ from selfbot.panel_security import PanelTokenSigner
 
 def make_service():
     db = Database("sqlite+pysqlite:///:memory:")
-    db.create_all()
+    db.create_schema_for_tests()
     return db, CapabilityService(DomainStore(db))
 
 
