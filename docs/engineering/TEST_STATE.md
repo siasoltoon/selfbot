@@ -15,7 +15,7 @@
 - Persian RTL/English UX validation and bounded pagination
 - release evidence semantics
 
-## Remaining External Verification
+## Latest Verification\n- CI 36177272784 — PASS on Python 3.11/3.12 after runtime integration changes.\n\n## Remaining External Verification
 - Alembic upgrade/downgrade smoke test against real target database
 - Telegram login/session and message flow
 - AI/STT/TTS/search providers
