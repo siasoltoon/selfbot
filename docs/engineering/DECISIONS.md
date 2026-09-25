@@ -31,3 +31,11 @@
 - Log masked phone numbers and hashed owner identifiers rather than raw personal/account identifiers.
 - Redact login codes, 2FA passwords, phone_code_hash, API credentials and session material from exception messages.
 - Preserve the original exception type for programmatic handling and keep user-facing errors generic until the exact failure is understood.
+
+
+## Decision: QR-first Telegram onboarding
+- Real runtime testing showed repeated `PhoneCodeExpiredError` even with the corrected resend protocol; observed delivery type was `SentCodeTypeApp`.
+- Telethon documents `qr_login()` plus `QRLogin.wait()` as a supported login flow; the wait must run while the QR is being scanned.
+- The onboarding bot generates the QR image in memory, sends it as short-lived Telegram media, removes the QR message after completion/expiry/failure, and never logs the QR URL/token.
+- QR login may require the account's 2FA password after scanning; it remains transient and is never persisted or logged.
+- A second already-authorized Telegram device is required to scan the QR shown by the onboarding bot; same-device phone-only onboarding is not claimed as supported by this transport.
