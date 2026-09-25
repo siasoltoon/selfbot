@@ -19,7 +19,8 @@
 - PR #16 CI run 36184453774 — PASS on Python 3.11 and 3.12.
 - Coverage includes fresh-client resend after `PhoneCodeExpiredError`, pending-state preservation, code-attempt lifecycle metadata, and safe recovery cleanup.
 - Real Telegram resend/login remains environment-dependent and is not marked PASS.
-- Follow-up resend-protocol test changes are pending CI.
+- PR #17 CI run 36185340785 — PASS on Python 3.11 and 3.12; both compile and pytest steps completed successfully.
+- Real Telegram login remains NOT PASS: the supplied run reproduced `PhoneCodeExpiredError` on both the initial code and the subsequent `/resend` attempt.
 
 ## Remaining External Verification
 - Real Telegram login/session and message flow
