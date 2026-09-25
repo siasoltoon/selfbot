@@ -15,7 +15,11 @@
 - Persian RTL/English UX validation and bounded pagination
 - release evidence semantics
 
-## Latest Verification\n- CI 36177272784 — PASS on Python 3.11/3.12 after runtime integration changes.\n\n## Remaining External Verification
+## Latest Verification\n- CI 36177272784 — PASS on Python 3.11/3.12 after runtime integration changes.\n\n## Latest Verification
+- CI 36179020202 — PASS on Python 3.11/3.12 after multi-user Telegram onboarding implementation.
+- Coverage includes encrypted session persistence, revoke flow, phone validation, 2FA branch, transient login cleanup, and linked-account routing.
+
+## Remaining External Verification
 - Alembic upgrade/downgrade smoke test against real target database
 - Telegram login/session and message flow
 - AI/STT/TTS/search providers
