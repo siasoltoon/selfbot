@@ -34,31 +34,23 @@ Only environment-dependent verification remains before final release: real Teleg
 ## 2026-09-25 — Telegram authentication code expiry recovery
 - Diagnosed real runtime failure as `PhoneCodeExpiredError` during `sign_in`, despite a successful code request.
 - Added Telegram code delivery metadata and elapsed-attempt diagnostics without logging code/hash secrets.
-- Added explicit `/resend` recovery using a fresh transient client and refreshed phone-code hash.
+- Added explicit /resend recovery using a transient client and refreshed phone-code state.
 - Preserved the code-entry state for recoverable expiry/invalid-code errors.
 - Added regression coverage; PR #16 CI run 36184453774 passed on Python 3.11/3.12.
-- Real Telegram retry remains pending operator verification.
+- Real Telegram retry remains environment-dependent and is not marked PASS.
 
 ## 2026-09-25 — Telegram authentication diagnostics
 - Added structured authentication lifecycle/error logging for phone-code and 2FA stages.
 - Added secure exception sanitization and identifier masking/fingerprinting.
 - Added regression coverage ensuring authentication secrets do not appear in diagnostics.
 - PR #15 CI run 36182724874 passed on Python 3.11 and 3.12.
-- Next external step: repeat real Telegram `/connect` and use the sanitized diagnostic event to identify any remaining authentication failure.
 
 ## 2026-09-25 — Telegram resend protocol correction
-- Real testing reproduced `PhoneCodeExpiredError` even after the fresh-client `/resend` flow.
-- Verified against Telegram/Telethon behavior that a true resend preserves the existing `phone_code_hash`; Telethon's `send_code_request()` uses `auth.resendCode` when its internal hash is present.
-- Corrected `/resend` to reuse the existing transient client instead of creating a second authorization client.
+- Real testing reproduced `PhoneCodeExpiredError` even after the fresh-client /resend flow.
+- Verified that a true resend preserves the existing `phone_code_hash`; Telethon's `send_code_request()` uses `auth.resendCode` when its internal hash is present.
+- Corrected /resend to reuse the existing transient Telethon client.
 - Updated regression coverage to verify the same client handles the initial request, resend, and verification.
-
-## 2026-09-25 — Real Telegram retry diagnosis and resend correction
-- Real runtime test reproduced `PhoneCodeExpiredError` twice: once 13.8 seconds after the initial code request and once 12.3 seconds after `/resend`.
-- Both requests reported `SentCodeTypeApp`; Telegram connection, DC migration and code-request calls succeeded.
-- The fresh-client resend approach was therefore not sufficient. PR #17 changed `/resend` to reuse the existing Telethon client and preserve its internal phone-code hash so Telethon can invoke the official resend-code protocol.
 - PR #17 CI run 36185340785 passed on Python 3.11 and 3.12.
-- Real Telegram onboarding remains unverified until the merged implementation succeeds externally.
-
 
 ## 2026-09-25 — QR-first Telegram onboarding
 - Replaced the production onboarding bot's phone/code chat interaction with Telethon QR login.
@@ -67,4 +59,11 @@ Only environment-dependent verification remains before final release: real Teleg
 - QR challenge media is removed from the onboarding chat after completion/expiry/failure; QR URLs/tokens are not logged.
 - Added `qrcode[pil]` and QR lifecycle regression tests.
 - PR #18 CI run 36186445250 passed on Python 3.11 and 3.12.
-- Real Telegram QR onboarding remains operator-dependent.
+- Real Telegram QR onboarding reached Telegram acceptance and 2FA in the first external test, but the transient session expired before password completion; this was diagnosed as a lifecycle bug rather than an authentication-password failure.
+
+## 2026-09-25 — QR post-scan 2FA lifetime fix
+- PR #19 extends the pending transient authentication deadline when Telegram accepts the QR and raises `SessionPasswordNeededError`.
+- Added regression coverage using a 1-second QR TTL and 5-second service TTL to prove cleanup cannot use the expired QR deadline during 2FA.
+- PR #19 CI run 36187266466 passed on Python 3.11 and 3.12.
+- PR #19 merged to `main` as `76a4e9d2887f1bebfee9eb0c5b5c5f5486294787`.
+- Fresh real QR+2FA onboarding is now the next operator verification step.
