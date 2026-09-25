@@ -24,9 +24,9 @@ IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery harde
 - Regression coverage verifies that sensitive test values are excluded from authentication error logs.
 
 ## Remaining Operator/Environment Work
-1. Run CI for the resend-protocol correction.
-2. Repeat real Telegram `/connect` flow and capture sanitized runtime result.
-3. If authentication still fails, identify the exact Telegram exception and create the next targeted fix.
+1. PR #17 resend-protocol correction is merged and CI-verified.
+2. Repeat real Telegram `/connect` flow against the merged main branch and capture sanitized runtime result.
+3. If authentication still fails, identify the exact Telegram exception before making another targeted change.
 3. Verify successful session persistence and linked-account message routing.
 4. Continue the broader external verification matrix: providers, worker, OCR, DB, backup/restore, deployment, performance and security.
 
