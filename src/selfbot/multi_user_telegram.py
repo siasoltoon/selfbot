@@ -404,6 +404,7 @@ class TelegramAuthenticationService:
                 "owner_fingerprint": self._owner_fingerprint(owner_user_id),
             }},
         )
+        self._pending_qr.pop(owner_user_id, None)
         return "connected"
 
     async def verify_qr_2fa(self, owner_user_id: str, password: str) -> str:
@@ -815,6 +816,12 @@ class OnboardingBot:
             if item is None or item.wait_task is None:
                 return
             result = await item.wait_task
+            qr_message = self._qr_messages.pop(user_id, None)
+            if qr_message is not None and hasattr(qr_message, "delete"):
+                try:
+                    await qr_message.delete()
+                except Exception:
+                    pass
             if result == "connected":
                 self._states.pop(user_id, None)
                 await event.reply("اتصال با موفقیت انجام شد.")
