@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from selfbot.db import Database
-from selfbot.errors import NotFoundError
+from selfbot.errors import DependencyError, NotFoundError
 from selfbot.multi_user_security import SessionCipher
 from selfbot.multi_user_telegram import TelegramAuthenticationService, TelegramSessionStore
 
@@ -157,7 +157,7 @@ def test_qr_2fa_persistence_failure_revokes_authenticated_session():
     async def run():
         await auth.begin_qr("owner-1")
         assert await auth._pending_qr["owner-1"].wait_task == "2fa_required"
-        with pytest.raises(RuntimeError, match="database unavailable"):
+        with pytest.raises(DependencyError, match="durable session storage failed"):
             await auth.verify_qr_2fa("owner-1", "secret-password")
 
     asyncio.run(run())
