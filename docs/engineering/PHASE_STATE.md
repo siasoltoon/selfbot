@@ -49,7 +49,9 @@ Status: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - PR #15 CI 36182724874 is PASS on Python 3.11/3.12.
 - PR #16 CI 36184453774 is PASS on Python 3.11/3.12.
 - PR #17 resend-protocol hardening CI 36185340785 is PASS on Python 3.11/3.12.
-- Real Telegram onboarding remains operator-dependent.
+- PR #18 QR onboarding CI 36186445250 is PASS on Python 3.11/3.12.
+- Production onboarding now uses Telethon QR login with tested PNG generation, wait lifecycle, cancellation, 2FA continuation and encrypted session finalization.
+- Real Telegram QR onboarding remains operator-dependent.
 - Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
 
 ## Runtime Deployment Gate
