@@ -26,7 +26,7 @@ class TelegramRuntimeRouter:
 
         command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
         if command == "/ping":
-            await self.telegram.send_message(event.chat_id or event.actor_id, "pong")
+            await self.telegram.send_message(event.chat_id or event.actor_id, "pong", account_id=event.payload.get("telegram_account_id"))
         elif command == "/status":
             await self.telegram.send_message(
                 event.chat_id or event.actor_id,
