@@ -53,6 +53,8 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - PR #19 QR post-scan 2FA lifetime fix CI 36187266466 is PASS on Python 3.11/3.12.
 - PR #19 is merged to main as 76a4e9d2887f1bebfee9eb0c5b5c5f5486294787.
 - PR #19 specifically keeps the transient authenticated client alive for the configured service TTL after QR acceptance and 2FA request.
+- PR #20 CI 36187991097 passed and merged to main as 1a74d35d44f958466f9d16eab903253fbbf96fc0; production QR clients now use persistent StringSession serialization.
+- PR #21 CI 36188868237 passed on Python 3.11/3.12 and merged to main as df5b27344bcc498d252c4e5786119ca0702fa1fc; authenticated sessions are revoked if durable persistence fails.
 - Real Telegram QR+2FA onboarding remains operator-dependent.
 - Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
 
