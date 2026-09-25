@@ -51,3 +51,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 6. Verify an incoming group member cannot trigger capability control.
 7. Continue session-reuse and broader production verification.
 
+
+
+## 2026-09-25 — Panel command routing fix
+- Root cause confirmed: the onboarding bot did not route `/panel` or `/پنل` at all; global linked-account routing existed, but bot-chat invocation had no handler.
+- Fixed on PR #24 and merged as `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
+- Added regression coverage for onboarding-bot panel replies with inline buttons.
+- Next: restart the Telegram runtime from current `main` and perform real Saved Messages, onboarding-bot, private-chat, and group verification.
