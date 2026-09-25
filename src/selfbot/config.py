@@ -29,11 +29,11 @@ class Settings:
     telegram_api_id: str | None
     telegram_api_hash: str | None
     telegram_session: str | None
-    telegram_session_is_string: bool
     pc_worker_enabled: bool
     pc_worker_url: str | None
     pc_worker_token: str | None
     owner_id: str | None = None
+    telegram_session_is_string: bool = True
 
 
 def load_settings() -> Settings:
