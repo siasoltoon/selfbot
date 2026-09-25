@@ -111,6 +111,41 @@ def test_authentication_finishes_without_persisting_code_or_password():
     assert not auth._pending
 
 
+def test_authentication_logs_safe_telegram_error_details(caplog):
+    db, store = make_store()
+
+    class CodeErrorClient(FakeClient):
+        async def sign_in(self, phone=None, code=None, *, password=None, phone_code_hash=None):
+            if password is None:
+                raise type("PhoneCodeInvalidError", (Exception,), {})("code 12345 rejected for +989123456789")
+
+    auth = TelegramAuthenticationService(
+        "12345",
+        "hash",
+        store,
+        client_factory=lambda *_: CodeErrorClient(),
+    )
+
+    async def run():
+        await auth.begin("owner-1", "+989123456789")
+        with pytest.raises(Exception) as exc_info:
+            await auth.verify_code("owner-1", "12345")
+        return exc_info.value
+
+    caplog.set_level("ERROR", logger="selfbot.multi_user_telegram")
+    error = asyncio.run(run())
+
+    assert type(error).__name__ == "PhoneCodeInvalidError"
+    records = [record for record in caplog.records if record.message == "telegram login code verification failed"]
+    assert len(records) == 1
+    context = records[0].context
+    assert context["stage"] == "verify_code"
+    assert context["exception_type"] == "PhoneCodeInvalidError"
+    assert context["phone_masked"] == "+98***89"
+    assert "12345" not in context["error_message"]
+    assert "+989123456789" not in context["error_message"]
+
+
 def test_authentication_rejects_bad_phone():
     db, store = make_store()
     auth = TelegramAuthenticationService("12345", "hash", store, client_factory=lambda *_: FakeClient())
