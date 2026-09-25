@@ -2,8 +2,8 @@
 
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
-- Status: IN PROGRESS — final external verification gate; Telegram QR+2FA lifecycle is now CI-verified and the next required step is a fresh real Telegram QR onboarding test.
-- Latest implementation unit: PR #19, QR post-scan 2FA lifetime fix, merged to `main` as `76a4e9d2887f1bebfee9eb0c5b5c5f5486294787`.
+- Status: IN PROGRESS — final external verification gate; Telegram QR+2FA lifecycle and post-auth persistence cleanup are CI-verified. The next required step is a fresh real Telegram QR onboarding test.
+- Latest implementation units: PR #20 fixed persistent `StringSession` creation and merged to `main` as `1a74d35d44f958466f9d16eab903253fbbf96fc0`; PR #21 hardened post-auth persistence failure cleanup and merged to `main` as `df5b27344bcc498d252c4e5786119ca0702fa1fc`.
 - Production onboarding uses QR login as the primary flow, with transient 2FA support; phone/code chat login is not the production interaction.
 
 ## Completed Code-Side Work
