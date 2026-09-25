@@ -146,6 +146,45 @@ def test_authentication_logs_safe_telegram_error_details(caplog):
     assert "+989123456789" not in context["error_message"]
 
 
+def test_authentication_can_resend_after_expired_code():
+    db, store = make_store()
+    clients = []
+
+    class ExpiringClient(FakeClient):
+        def __init__(self, expires=False):
+            super().__init__()
+            self.expires = expires
+            self.sign_in_attempts = 0
+
+        async def sign_in(self, phone=None, code=None, *, password=None, phone_code_hash=None):
+            self.sign_in_attempts += 1
+            if self.expires:
+                raise type("PhoneCodeExpiredError", (Exception,), {})("The confirmation code has expired")
+            assert phone_code_hash == "hash-123"
+            return FakeUser()
+
+    def factory(*_):
+        client = ExpiringClient(expires=not clients)
+        clients.append(client)
+        return client
+
+    auth = TelegramAuthenticationService("12345", "hash", store, client_factory=factory)
+
+    async def run():
+        await auth.begin("owner-1", "+989123456789")
+        with pytest.raises(Exception) as exc_info:
+            await auth.verify_code("owner-1", "12345")
+        assert type(exc_info.value).__name__ == "PhoneCodeExpiredError"
+        await auth.resend_code("owner-1")
+        return await auth.verify_code("owner-1", "67890")
+
+    assert asyncio.run(run()) == "123456"
+    assert len(clients) == 2
+    assert clients[0].disconnected is True
+    assert clients[1].disconnected is True
+    assert not auth._pending
+
+
 def test_authentication_rejects_bad_phone():
     db, store = make_store()
     auth = TelegramAuthenticationService("12345", "hash", store, client_factory=lambda *_: FakeClient())

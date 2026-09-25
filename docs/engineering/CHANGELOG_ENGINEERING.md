@@ -31,6 +31,14 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added cryptography dependency and GitHub Actions secret configuration.
 - CI 36179020202 passed on Python 3.11/3.12.
 
+## 2026-09-25 — Telegram authentication code expiry recovery
+- Diagnosed real runtime failure as `PhoneCodeExpiredError` during `sign_in`, despite a successful code request.
+- Added Telegram code delivery metadata and elapsed-attempt diagnostics without logging code/hash secrets.
+- Added explicit `/resend` recovery using a fresh transient client and refreshed phone-code hash.
+- Preserved the code-entry state for recoverable expiry/invalid-code errors.
+- Added regression coverage; PR #16 CI run 36184453774 passed on Python 3.11/3.12.
+- Real Telegram retry remains pending operator verification.
+
 ## 2026-09-25 — Telegram authentication diagnostics
 - Added structured authentication lifecycle/error logging for phone-code and 2FA stages.
 - Added secure exception sanitization and identifier masking/fingerprinting.

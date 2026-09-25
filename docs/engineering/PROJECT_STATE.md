@@ -2,7 +2,7 @@
 
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
-- Status: IN PROGRESS — final external verification gate.
+- Status: IN PROGRESS — final external verification gate; Telegram code-expiry recovery hardening is implemented and CI-verified.
 - Latest merged implementation: PR #14, merge commit bb5cf7f70e5d48f6158eaa24da728e3000e53eae.
 - Latest unmerged hardening: PR #15, secure Telegram authentication diagnostics.
 - CI for PR #15: run 36182724874 PASS on Python 3.11 and 3.12.

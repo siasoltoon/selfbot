@@ -44,6 +44,11 @@ class PendingLogin:
     client: AuthClient
     phone_code_hash: str
     expires_at: float
+    code_requested_at: float
+    code_timeout_seconds: int | None = None
+    code_type: str | None = None
+    next_code_type: str | None = None
+    code_attempts: int = 0
 
 
 class TelegramSessionStore:
@@ -248,12 +253,24 @@ class TelegramAuthenticationService:
             if not code_hash:
                 await client.disconnect()
                 raise DependencyError("Telegram did not return a phone code hash", retryable=True)
+            now = time.monotonic()
+            telegram_timeout = getattr(sent, "timeout", None)
+            try:
+                telegram_timeout = int(telegram_timeout) if telegram_timeout is not None else None
+            except (TypeError, ValueError):
+                telegram_timeout = None
+            sent_type = getattr(getattr(sent, "type", None), "__class__", type(None)).__name__ or None
+            next_type = getattr(getattr(sent, "next_type", None), "__class__", type(None)).__name__ or None
             self._pending[owner_user_id] = PendingLogin(
                 owner_user_id=owner_user_id,
                 phone=phone,
                 client=client,
                 phone_code_hash=str(code_hash),
-                expires_at=time.monotonic() + self.ttl_seconds,
+                expires_at=now + self.ttl_seconds,
+                code_requested_at=now,
+                code_timeout_seconds=telegram_timeout,
+                code_type=sent_type,
+                next_code_type=next_type,
             )
             self.logger.info(
                 "telegram login code request succeeded",
@@ -263,6 +280,80 @@ class TelegramAuthenticationService:
                     "phone_masked": self._mask_phone(phone),
                     "elapsed_ms": round((time.monotonic() - started) * 1000),
                     "pending_ttl_seconds": self.ttl_seconds,
+                    "telegram_code_timeout_seconds": telegram_timeout,
+                    "telegram_code_type": sent_type,
+                    "telegram_next_code_type": next_type,
+                }},
+            )
+
+    async def resend_code(self, owner_user_id: str) -> None:
+        """Request a fresh Telegram login code using a fresh transient client."""
+        async with self._lock:
+            item = await self._get_pending(owner_user_id)
+            started = time.monotonic()
+            new_client = self._new_client()
+            try:
+                await new_client.connect()
+                sent = await new_client.send_code_request(item.phone)
+            except Exception as exc:
+                try:
+                    await new_client.disconnect()
+                except Exception:
+                    pass
+                self.logger.error(
+                    "telegram login code resend failed",
+                    extra={"context": {
+                        "stage": "resend_code",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc, secrets=(item.phone,)),
+                    }},
+                    exc_info=True,
+                )
+                raise
+            code_hash = getattr(sent, "phone_code_hash", None)
+            if not code_hash:
+                await new_client.disconnect()
+                raise DependencyError("Telegram did not return a phone code hash for resend", retryable=True)
+            old_client = item.client
+            item.client = new_client
+            item.phone_code_hash = str(code_hash)
+            now = time.monotonic()
+            item.code_requested_at = now
+            item.expires_at = now + self.ttl_seconds
+            telegram_timeout = getattr(sent, "timeout", None)
+            try:
+                telegram_timeout = int(telegram_timeout) if telegram_timeout is not None else None
+            except (TypeError, ValueError):
+                telegram_timeout = None
+            item.code_timeout_seconds = telegram_timeout
+            item.code_type = getattr(getattr(sent, "type", None), "__class__", type(None)).__name__ or None
+            item.next_code_type = getattr(getattr(sent, "next_type", None), "__class__", type(None)).__name__ or None
+            item.code_attempts = 0
+            try:
+                await old_client.disconnect()
+            except Exception:
+                self.logger.warning(
+                    "telegram previous login client cleanup failed",
+                    extra={"context": {
+                        "stage": "resend_code_cleanup",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                    }},
+                )
+            self.logger.info(
+                "telegram login code resent",
+                extra={"context": {
+                    "stage": "resend_code",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                    "telegram_code_timeout_seconds": telegram_timeout,
+                    "telegram_code_type": item.code_type,
+                    "telegram_next_code_type": item.next_code_type,
                 }},
             )
 
@@ -280,6 +371,7 @@ class TelegramAuthenticationService:
                     }},
                 )
                 raise ValidationError("Telegram login code must contain only digits")
+            item.code_attempts += 1
             started = time.monotonic()
             self.logger.info(
                 "telegram login code verification started",
@@ -287,7 +379,9 @@ class TelegramAuthenticationService:
                     "stage": "verify_code",
                     "owner_fingerprint": self._owner_fingerprint(owner_user_id),
                     "phone_masked": self._mask_phone(item.phone),
-                    "pending_age_seconds": round(max(0.0, time.monotonic() - (item.expires_at - self.ttl_seconds)), 3),
+                    "pending_age_seconds": round(max(0.0, time.monotonic() - item.code_requested_at), 3),
+                    "code_attempt": item.code_attempts,
+                    "telegram_code_timeout_seconds": item.code_timeout_seconds,
                 }},
             )
             try:
@@ -598,10 +692,24 @@ class OnboardingBot:
             await event.reply("کد ورود تلگرام را بفرست. این کد ذخیره نمی‌شود.")
             return
         if state == "code":
+            if lower == "/resend":
+                try:
+                    await self.auth.resend_code(user_id)
+                except Exception:
+                    await event.reply("ارسال مجدد کد ناموفق بود. چند لحظه صبر کن و دوباره /resend را بزن.")
+                    return
+                await event.reply("کد جدید ارسال شد. فقط آخرین کد دریافتی را وارد کن.")
+                return
             try:
                 result = await self.auth.verify_code(user_id, text)
-            except Exception:
-                await event.reply("کد نامعتبر یا منقضی است. /connect را دوباره اجرا کن.")
+            except Exception as exc:
+                if exc.__class__.__name__ == "PhoneCodeExpiredError":
+                    await event.reply("کد منقضی شده است. برای دریافت کد جدید /resend را بزن.")
+                    return
+                if exc.__class__.__name__ == "PhoneCodeInvalidError":
+                    await event.reply("کد نادرست است. همان آخرین کدی را که تلگرام فرستاده وارد کن؛ برای کد جدید /resend را بزن.")
+                    return
+                await event.reply("ورود با کد ناموفق بود. /connect را دوباره اجرا کن.")
                 self._states.pop(user_id, None)
                 return
             if result == "2fa_required":
