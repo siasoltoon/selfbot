@@ -1,9 +1,6 @@
 """Durable per-owner capability registry and feature gates."""
 from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Iterable
-
 from .domain_store import DomainStore
 from .errors import NotFoundError, ValidationError
 
@@ -13,23 +10,26 @@ class CapabilityDefinition:
     capability_id: str
     title: str
     description: str
+    default_enabled: bool = False
+    toggleable: bool = True
 
 
 CAPABILITIES: tuple[CapabilityDefinition, ...] = (
-    CapabilityDefinition("ai", "هوش مصنوعی", "گفت‌وگو و پردازش هوشمند"),
-    CapabilityDefinition("memory", "حافظه بلندمدت", "ذخیره، جست‌وجو و مدیریت حافظه"),
-    CapabilityDefinition("web", "هوش وب", "جست‌وجو و دریافت امن اطلاعات وب"),
-    CapabilityDefinition("automation", "اتوماسیون", "رویداد، شرط، اقدام و اجرای خودکار"),
+    CapabilityDefinition("ai", "هوش مصنوعی", "دستیار، گفت‌وگو، خلاصه‌سازی و ترجمه"),
+    CapabilityDefinition("memory", "حافظه بلندمدت", "ذخیره، جست‌وجو، به‌روزرسانی و حذف حافظه"),
+    CapabilityDefinition("voice", "دستیار صوتی", "STT/TTS و فرمان‌های صوتی"),
+    CapabilityDefinition("web", "هوش وب", "تحقیق و دریافت امن اطلاعات وب"),
+    CapabilityDefinition("plugins", "اکوسیستم Plugin", "افزونه‌های مستقل و قابل جایگزینی"),
+    CapabilityDefinition("worker", "PC Worker", "پردازش سنگین اختیاری روی Worker"),
+    CapabilityDefinition("automation", "اتوماسیون پیشرفته", "رویداد، شرط، اقدام، اجرا و لاگ"),
     CapabilityDefinition("reminders", "یادآورها", "یادآورهای یک‌باره و تکرارشونده"),
-    CapabilityDefinition("voice", "صدا", "تبدیل گفتار به متن و متن به گفتار"),
-    CapabilityDefinition("ocr", "OCR", "تشخیص متن از تصویر و اسناد"),
-    CapabilityDefinition("analytics", "تحلیل و آمار", "ثبت و مشاهده شاخص‌های عملکرد"),
-    CapabilityDefinition("worker", "PC Worker", "پردازش‌های سنگین روی Worker اختیاری"),
-    CapabilityDefinition("security", "امنیت", "کنترل دسترسی، قفل اضطراری و ممیزی"),
-    CapabilityDefinition("plugins", "Plugin System", "قابلیت‌های افزونه‌ای مستقل"),
-    CapabilityDefinition("learning", "یادگیری کنترل‌شده", "یادگیری و تنظیمات کنترل‌شده"),
-    CapabilityDefinition("backup", "پشتیبان‌گیری", "پشتیبان‌گیری و بازیابی داده"),
-    CapabilityDefinition("tasks", "Task & Scheduler", "صف، وظیفه و زمان‌بندی پایدار"),
+    CapabilityDefinition("backup", "Backup & Restore", "پشتیبان‌گیری و بازیابی اعتبارسنجی‌شده"),
+    CapabilityDefinition("analytics", "Analytics", "تحلیل فعالیت، خطا و عملکرد"),
+    CapabilityDefinition("learning", "یادگیری کنترل‌شده", "پیشنهاد و یادگیری بدون تغییر خاموش رفتار حساس"),
+    CapabilityDefinition("multi_agent", "Multi-Agent AI", "نقش‌های تخصصی پشت یک Router مشترک"),
+    CapabilityDefinition("ocr", "OCR", "تشخیص متن از تصویر و سند"),
+    CapabilityDefinition("tasks", "Task & Scheduler", "وظیفه، صف و زمان‌بندی پایدار", True, False),
+    CapabilityDefinition("security", "Security", "مجوز، ممیزی و قفل اضطراری", True, False),
 )
 
 
@@ -59,18 +59,27 @@ class CapabilityService:
         except NotFoundError:
             record_id = self.store.put(
                 self.DOMAIN,
-                {"enabled": {item.capability_id: False for item in CAPABILITIES}},
+                {"enabled": {item.capability_id: item.default_enabled for item in CAPABILITIES}},
                 owner_id=owner,
             )
             return self.store.get(record_id)
 
+    def definition(self, capability_id: str) -> CapabilityDefinition:
+        value = str(capability_id).strip().lower()
+        for item in CAPABILITIES:
+            if item.capability_id == value:
+                return item
+        raise NotFoundError(f"unknown capability: {capability_id}")
+
     def is_enabled(self, owner_id: str, capability_id: str) -> bool:
         definition = self.definition(capability_id)
         state = self._record(owner_id).state
-        return bool(state.get("enabled", {}).get(definition.capability_id, False))
+        return bool(state.get("enabled", {}).get(definition.capability_id, definition.default_enabled))
 
     def set_enabled(self, owner_id: str, capability_id: str, enabled: bool) -> bool:
         definition = self.definition(capability_id)
+        if not definition.toggleable and bool(enabled) != definition.default_enabled:
+            raise ValidationError(f"capability cannot be disabled: {definition.capability_id}")
         record = self._record(owner_id)
         state = dict(record.state)
         enabled_state = dict(state.get("enabled", {}))
@@ -82,25 +91,11 @@ class CapabilityService:
     def snapshot(self, owner_id: str) -> dict[str, bool]:
         state = self._record(owner_id).state
         enabled = state.get("enabled", {})
-        return {item.capability_id: bool(enabled.get(item.capability_id, False)) for item in CAPABILITIES}
-
-    def definition(self, capability_id: str) -> CapabilityDefinition:
-        value = str(capability_id).strip().lower()
-        for item in CAPABILITIES:
-            if item.capability_id == value:
-                return item
-        raise NotFoundError(f"unknown capability: {capability_id}")
+        return {
+            item.capability_id: bool(enabled.get(item.capability_id, item.default_enabled))
+            for item in CAPABILITIES
+        }
 
     def require(self, owner_id: str, capability_id: str) -> None:
         if not self.is_enabled(owner_id, capability_id):
             raise ValidationError(f"capability is disabled: {self.definition(capability_id).capability_id}")
-
-    def render(self, owner_id: str) -> str:
-        snapshot = self.snapshot(owner_id)
-        lines = ["🤖 پنل مدیریت Selfbot", "", "وضعیت قابلیت‌ها:"]
-        for item in CAPABILITIES:
-            marker = "🟢" if snapshot[item.capability_id] else "⚪"
-            lines.append(f"{marker} {item.title} — {'روشن' if snapshot[item.capability_id] else 'خاموش'}")
-        lines.append("")
-        lines.append("برای تغییر سریع از /capability <id> on|off استفاده کن.")
-        return "\n".join(lines)
