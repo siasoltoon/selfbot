@@ -984,17 +984,30 @@ class OnboardingBot:
     def _panel_view(self, owner_id: str) -> tuple[str, list[list[Any]]]:
         from telethon import Button
         snapshot = self.capabilities.snapshot(owner_id)
-        lines = ["🤖 پنل مدیریت Selfbot", "", "قابلیت‌ها:"]
+        lines = [
+            "🤖 پنل مدیریت Selfbot",
+            "",
+            "🟢 روشن | ⚪ خاموش",
+            "با هر دکمه وضعیت همان قابلیت فوراً در دیتابیس ذخیره می‌شود.",
+            "",
+        ]
         buttons = []
+        token = self.panel_token_factory(owner_id)
+        row = []
         for item in self.capabilities.definitions():
             enabled = snapshot[item.capability_id]
             marker = "🟢" if enabled else "⚪"
-            lines.append(f"{marker} {item.title} — {'روشن' if enabled else 'خاموش'}")
-            token = self.panel_token_factory(owner_id)
-            buttons.append([Button.inline(
-                f"{marker} {item.title}",
-                f"panel|{token}|{item.capability_id}",
-            )])
+            lines.append(f"{marker} {item.title}: {item.description}")
+            if item.toggleable:
+                row.append(Button.inline(
+                    f"{marker} {item.title}",
+                    f"panel|{token}|{item.capability_id}",
+                ))
+                if len(row) == 2:
+                    buttons.append(row)
+                    row = []
+        if row:
+            buttons.append(row)
         return "\n".join(lines), buttons
 
     async def _watch_qr(self, user_id: str, event: Any) -> None:
