@@ -419,6 +419,7 @@ class TelegramAuthenticationService:
             try:
                 await item.client.sign_in(password=password)
                 account_id = await self._finalize_client(owner_user_id, item.client)
+                self._pending_qr.pop(owner_user_id, None)
             except Exception as exc:
                 self.logger.error(
                     "telegram qr 2fa verification failed",
