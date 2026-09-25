@@ -154,11 +154,13 @@ class TelegramAuthenticationService:
             raise ValidationError("phone must use international format, for example +989123456789")
         return value
 
-    def _cleanup_expired(self) -> None:
+    async def _cleanup_expired(self) -> None:
         now = time.monotonic()
         expired = [key for key, item in self._pending.items() if item.expires_at <= now]
         for key in expired:
-            self._pending.pop(key, None)
+            item = self._pending.pop(key, None)
+            if item:
+                await item.client.disconnect()
 
     async def begin(self, owner_user_id: str, phone: str) -> None:
         phone = self._normalize_phone(phone)
@@ -184,7 +186,7 @@ class TelegramAuthenticationService:
 
     async def verify_code(self, owner_user_id: str, code: str) -> str:
         async with self._lock:
-            item = self._get_pending(owner_user_id)
+            item = await self._get_pending(owner_user_id)
             if not re.fullmatch(r"\d{3,8}", code.strip()):
                 raise ValidationError("Telegram login code must contain only digits")
             try:
@@ -211,8 +213,8 @@ class TelegramAuthenticationService:
                 password = ""
             return await self._finalize(owner_user_id, item)
 
-    def _get_pending(self, owner_user_id: str) -> PendingLogin:
-        self._cleanup_expired()
+    async def _get_pending(self, owner_user_id: str) -> PendingLogin:
+        await self._cleanup_expired()
         item = self._pending.get(owner_user_id)
         if item is None:
             raise NotFoundError("no active Telegram login; start again")
