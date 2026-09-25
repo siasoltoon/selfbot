@@ -62,3 +62,9 @@ A phase remains non-final until its required evidence is recorded.
 - Regression tests added: tests/test_capability_panel.py and tests/test_runtime_panel.py.
 - Coverage includes durable per-owner capability settings, authenticated compact panel tokens, outgoing /پنل routing from multiple chat types, and incoming-command rejection.
 - Real Telegram Inline Mode/button interaction is NOT yet claimed PASS; it requires operator-side BotFather configuration and runtime verification.
+
+
+## 2026-09-25 — Panel routing regression
+- PR #24 CI run `36195321075` passed on Python 3.11 and 3.12.
+- Real Telegram panel interaction is still pending after deployment of merge `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
+- Do not mark the runtime interaction as PASS until the current runtime is restarted and `/panel` is exercised in Saved Messages and onboarding-bot chat.
