@@ -67,3 +67,12 @@ Only environment-dependent verification remains before final release: real Teleg
 - PR #19 CI run 36187266466 passed on Python 3.11 and 3.12.
 - PR #19 merged to `main` as `76a4e9d2887f1bebfee9eb0c5b5c5f5486294787`.
 - Fresh real QR+2FA onboarding is now the next operator verification step.
+
+## 2026-09-25 — QR session persistence and post-auth safety
+- PR #20 corrected the transient production client from Telethon `MemorySession` to `StringSession`, preventing `session.save()` from returning `None` after successful QR/2FA authentication.
+- Real runtime evidence showed Telegram had accepted the login and emitted a new-session security notification; the application then failed during durable session persistence. This was not a 2FA password rejection.
+- PR #20 CI run 36187991097 passed and merged to `main` as `1a74d35d44f958466f9d16eab903253fbbf96fc0`.
+- PR #21 added post-auth session revocation on durable persistence failure, explicit retryable persistence errors, and distinct invalid-2FA/persistence user messaging.
+- PR #21 first CI run 36188334722 failed due to a regression-test expectation mismatch; corrected test then passed in CI run 36188868237 on Python 3.11/3.12.
+- PR #21 merged to `main` as `df5b27344bcc498d252c4e5786119ca0702fa1fc`.
+- Fresh real QR+2FA onboarding against current `main` is now the next operator verification step.
