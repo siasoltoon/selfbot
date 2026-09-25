@@ -148,32 +148,27 @@ def test_authentication_logs_safe_telegram_error_details(caplog):
 
 def test_authentication_can_resend_after_expired_code():
     db, store = make_store()
+    clients = []
 
     class ExpiringClient(FakeClient):
-        def __init__(self):
+        def __init__(self, expires=False):
             super().__init__()
+            self.expires = expires
             self.sign_in_attempts = 0
-            self.send_code_calls = 0
-
-        async def send_code_request(self, phone):
-            self.send_code_calls += 1
-            self.phone = phone
-            return SentCode(phone_code_hash=f"hash-{self.send_code_calls}")
 
         async def sign_in(self, phone=None, code=None, *, password=None, phone_code_hash=None):
             self.sign_in_attempts += 1
-            if self.sign_in_attempts == 1:
+            if self.expires:
                 raise type("PhoneCodeExpiredError", (Exception,), {})("The confirmation code has expired")
-            assert phone_code_hash == "hash-2"
+            assert phone_code_hash == "hash-123"
             return FakeUser()
 
-    client = ExpiringClient()
-    auth = TelegramAuthenticationService(
-        "12345",
-        "hash",
-        store,
-        client_factory=lambda *_: client,
-    )
+    def factory(*_):
+        client = ExpiringClient(expires=not clients)
+        clients.append(client)
+        return client
+
+    auth = TelegramAuthenticationService("12345", "hash", store, client_factory=factory)
 
     async def run():
         await auth.begin("owner-1", "+989123456789")
@@ -184,7 +179,9 @@ def test_authentication_can_resend_after_expired_code():
         return await auth.verify_code("owner-1", "67890")
 
     assert asyncio.run(run()) == "123456"
-    assert client.send_code_calls == 2
+    assert len(clients) == 2
+    assert clients[0].disconnected is True
+    assert clients[1].disconnected is True
     assert not auth._pending
 
 
