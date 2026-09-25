@@ -16,3 +16,11 @@
 ## Final Gate
 Only environment-dependent verification remains before final release: real Telegram/providers/worker/OCR dataset/deployment/performance/backup/recovery/security evidence.
 \n\n## 2026-09-25 — GitHub Actions Runtime\n- Added shared bot process entrypoint.\n- Added manual Windows GitHub Actions runtime workflow with migrations and secure environment injection.\n- Added Telegram StringSession support.\n- Reviewed `siasoltoon/vps`; copied the Windows-runner deployment pattern only, excluding hardcoded credentials and insecure RDP configuration.\n- CI 36177272784 passed on Python 3.11/3.12.\n
+
+## 2026-09-25 — Multi-user Telegram onboarding
+- Added persistent encrypted Telegram account records and migration 0003.
+- Added phone/code/2FA authentication service with transient credentials.
+- Added onboarding bot commands: /start, /connect, /status, /disconnect.
+- Added independent linked-account runtime and per-account command routing.
+- Added cryptography dependency and GitHub Actions secret configuration.
+- CI 36179020202 passed on Python 3.11/3.12.

@@ -27,5 +27,12 @@ The repository does not claim production release merely from framework/unit/CI e
 - Telegram StringSession secrets are now supported explicitly.
 - CI run 36177272784 PASS on Python 3.11/3.12.
 
+## Multi-user Telegram Runtime
+- Multi-user onboarding implementation added in PR #14: phone → Telegram code → optional 2FA → encrypted Telethon session.
+- Normal BotFather onboarding bot is separate from linked user-account sessions.
+- Persistent session records use encrypted storage and support revoke/disconnect.
+- Connected accounts run as independent Telethon clients and route commands per linked account.
+- CI 36179020202 PASS on Python 3.11/3.12.
+
 ## Next
-Configure the required GitHub Actions secrets and execute the first real Telegram runtime verification. Then record the result and continue the remaining external verification matrix.
+Configure the multi-user runtime secrets and persistent DATABASE_URL, execute the first real onboarding/login/message-flow verification, then record the result and continue the remaining external verification matrix.

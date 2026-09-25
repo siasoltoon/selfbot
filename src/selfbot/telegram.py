@@ -63,7 +63,7 @@ class TelegramAdapter:
         if client is not None:
             result = client.stop()
             if inspect.isawaitable(result): await result
-    async def send_message(self, chat_id: str | int, text: str) -> Any:
+    async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None) -> Any:
         if not self._started or self._client is None: raise DependencyError("Telegram client is not started", retryable=False)
         if not text.strip(): raise ValidationError("Telegram message text must not be empty")
         return await self._client.send_message(chat_id, text)

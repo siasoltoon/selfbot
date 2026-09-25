@@ -55,4 +55,8 @@ Status: CORE EVIDENCE BOUNDARY IMPLEMENTED; PRODUCTION EXECUTION REMAINS
 Status: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIRONMENT TESTS
 - 12 evidence areas are tracked explicitly
 - final release cannot pass while evidence is NOT_RUN or BLOCKED
-\n\n## Runtime Deployment Gate\n- GitHub Actions Windows runtime workflow implemented.\n- Real Telegram startup/message-flow verification remains operator-dependent.\n
+\n\n## Multi-user Telegram Runtime Gate
+- Multi-user onboarding/authentication/session encryption/runtime routing code implemented.
+- Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
+
+## Runtime Deployment Gate\n- GitHub Actions Windows runtime workflow implemented.\n- Real Telegram startup/message-flow verification remains operator-dependent.\n
