@@ -48,7 +48,8 @@ Status: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Expired/invalid code recovery now preserves the transient login state and supports explicit `/resend`; follow-up hardening reuses the same transient client so Telethon can invoke the official resend-code protocol.
 - PR #15 CI 36182724874 is PASS on Python 3.11/3.12.
 - PR #16 CI 36184453774 is PASS on Python 3.11/3.12.
-- Follow-up resend-protocol hardening is awaiting CI.
+- PR #17 resend-protocol hardening CI 36185340785 is PASS on Python 3.11/3.12.
+- Real Telegram onboarding remains operator-dependent.
 - Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
 
 ## Runtime Deployment Gate
