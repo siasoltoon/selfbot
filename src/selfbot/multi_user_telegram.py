@@ -378,10 +378,7 @@ class TelegramAuthenticationService:
                 exc_info=True,
             )
             self._pending_qr.pop(owner_user_id, None)
-            try:
-                await item.client.disconnect()
-            except Exception:
-                pass
+            await self._abort_authenticated_client(item.client)
             return "failed"
         try:
             await self._finalize_client(owner_user_id, item.client)
@@ -435,10 +432,16 @@ class TelegramAuthenticationService:
                         "elapsed_ms": round((time.monotonic() - started) * 1000),
                         "exception_type": type(exc).__name__,
                         "exception_module": type(exc).__module__,
-                        "error_message": self._safe_exception_message(exc),
+                        "error_message": self._safe_exception_message(exc, secrets=(password,)),
                     }},
                     exc_info=True,
                 )
+                # A successful 2FA sign-in creates a real Telegram session even
+                # if durable persistence fails afterwards. Revoke that session
+                # before reporting failure so Telegram does not retain a
+                # connected session that the application cannot safely manage.
+                if type(exc).__name__ != "PasswordHashInvalidError":
+                    await self._abort_authenticated_client(item.client)
                 raise
             finally:
                 password = ""
@@ -636,6 +639,37 @@ class TelegramAuthenticationService:
             raise NotFoundError("no active Telegram login; start again")
         return item
 
+    async def _abort_authenticated_client(self, client: AuthClient) -> None:
+        try:
+            log_out = getattr(client, "log_out", None)
+            if callable(log_out):
+                result = log_out()
+                if inspect.isawaitable(result):
+                    await result
+        except Exception as exc:
+            self.logger.warning(
+                "telegram authenticated session cleanup failed",
+                extra={"context": {
+                    "stage": "authenticated_session_cleanup",
+                    "exception_type": type(exc).__name__,
+                    "exception_module": type(exc).__module__,
+                    "error_message": self._safe_exception_message(exc),
+                }},
+            )
+        finally:
+            try:
+                await client.disconnect()
+            except Exception as exc:
+                self.logger.warning(
+                    "telegram client disconnect after auth failure failed",
+                    extra={"context": {
+                        "stage": "authenticated_session_disconnect",
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc),
+                    }},
+                )
+
     async def _finalize_client(self, owner_user_id: str, client: AuthClient) -> str:
         me = await client.get_me()
         account_id = str(getattr(me, "id", "") or "")
@@ -644,7 +678,13 @@ class TelegramAuthenticationService:
         session = client.session.save()
         if not isinstance(session, str) or not session.strip():
             raise DependencyError("Telegram login succeeded but a persistent StringSession was unavailable", retryable=False)
-        self.store.save(owner_user_id, account_id, session)
+        try:
+            self.store.save(owner_user_id, account_id, session)
+        except Exception as exc:
+            raise DependencyError(
+                "Telegram login succeeded but durable session storage failed",
+                retryable=True,
+            ) from exc
         await client.disconnect()
         return account_id
 
@@ -908,8 +948,14 @@ class OnboardingBot:
         if self._states.get(user_id) == "qr_password":
             try:
                 account_id = await self.auth.verify_qr_2fa(user_id, text)
-            except Exception:
-                await event.reply("رمز دومرحله‌ای نامعتبر است یا ورود کامل نشد. /connect را دوباره اجرا کن.")
+            except Exception as exc:
+                if type(exc).__name__ == "PasswordHashInvalidError":
+                    message = "رمز دومرحله‌ای نادرست است. /connect را دوباره اجرا کن."
+                elif isinstance(exc, DependencyError):
+                    message = "ورود تلگرام تأیید شد، اما ذخیره امن نشست انجام نشد و نشست تأییدشده لغو شد. /connect را دوباره اجرا کن."
+                else:
+                    message = "تکمیل ورود تلگرام ناموفق بود. /connect را دوباره اجرا کن."
+                await event.reply(message)
                 self._states.pop(user_id, None)
                 return
             self._states.pop(user_id, None)
