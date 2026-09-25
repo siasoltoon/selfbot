@@ -19,7 +19,7 @@
 - CI 36179020202 — PASS on Python 3.11/3.12 after multi-user Telegram onboarding implementation.
 - Coverage includes encrypted session persistence, revoke flow, phone validation, 2FA branch, transient login cleanup, and linked-account routing.
 
-## Remaining External Verification
+## Latest Verification\n- PR #14 CI 36179129789 — PASS on Python 3.11/3.12 after multi-user Telegram onboarding merge.\n\n## Remaining External Verification
 - Alembic upgrade/downgrade smoke test against real target database
 - Telegram login/session and message flow
 - AI/STT/TTS/search providers
