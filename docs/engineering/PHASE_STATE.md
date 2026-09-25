@@ -45,7 +45,9 @@ Status: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 ## Multi-user Telegram Runtime Gate
 - Multi-user onboarding/authentication/session encryption/runtime routing code implemented.
 - Secure authentication diagnostics added and covered by regression tests.
+- Expired/invalid code recovery now preserves the transient login state and supports explicit `/resend` using a fresh client.
 - PR #15 CI 36182724874 is PASS on Python 3.11/3.12.
+- PR #16 CI 36184453774 is PASS on Python 3.11/3.12.
 - Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
 
 ## Runtime Deployment Gate
