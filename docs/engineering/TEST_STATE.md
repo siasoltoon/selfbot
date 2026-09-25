@@ -6,22 +6,18 @@
 - Phase 4-10: 35611024600 — PASS on Python 3.11/3.12.
 - Phase 11-20: 35613550835 — PASS on Python 3.11/3.12.
 - Phases 11-25 integration/hardening: 35614933655 — PASS on Python 3.11/3.12.
+- Runtime integration: 36177272784 — PASS on Python 3.11/3.12.
+- Multi-user Telegram onboarding: 36179020202 — PASS on Python 3.11/3.12.
+- PR #14 merge verification: 36179129789 — PASS on Python 3.11/3.12.
 
-## Verified Code-Side Coverage
-- service composition and durable domain state
-- migrations/schema definitions
-- OCR benchmark metric calculation
-- adversarial/failure harness
-- Persian RTL/English UX validation and bounded pagination
-- release evidence semantics
+## Latest Verification
+- PR #15 CI run 36182724874 — PASS on Python 3.11 and 3.12.
+- Both compile and pytest steps completed successfully.
+- New regression test covers safe Telegram authentication error diagnostics.
 
-## Latest Verification\n- CI 36177272784 — PASS on Python 3.11/3.12 after runtime integration changes.\n\n## Latest Verification
-- CI 36179020202 — PASS on Python 3.11/3.12 after multi-user Telegram onboarding implementation.
-- Coverage includes encrypted session persistence, revoke flow, phone validation, 2FA branch, transient login cleanup, and linked-account routing.
-
-## Latest Verification\n- PR #14 CI 36179129789 — PASS on Python 3.11/3.12 after multi-user Telegram onboarding merge.\n\n## Remaining External Verification
-- Alembic upgrade/downgrade smoke test against real target database
-- Telegram login/session and message flow
+## Remaining External Verification
+- Real Telegram login/session and message flow
+- Alembic migration smoke test against real target database
 - AI/STT/TTS/search providers
 - PC Worker transport/heartbeat/claim/retry/offline recovery
 - labeled OCR dataset benchmark
