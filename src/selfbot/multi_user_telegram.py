@@ -277,7 +277,7 @@ class MultiUserTelegramRuntime:
                 if inspect.isawaitable(result):
                     await result
                 client.add_event_handler(self._handler(record.owner_user_id, record.telegram_account_id))
-                self._clients[record.id] = client
+                self._clients[record.telegram_account_id] = client
             except Exception:
                 result = client.disconnect()
                 if inspect.isawaitable(result):
@@ -303,6 +303,16 @@ class MultiUserTelegramRuntime:
                 },
             ))
         return handler
+
+    async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None) -> Any:
+        if not account_id:
+            raise ValidationError("telegram account id is required for multi-user transport")
+        client = self._clients.get(account_id)
+        if client is None:
+            raise NotFoundError("Telegram account runtime is not active")
+        if not text.strip():
+            raise ValidationError("Telegram message text must not be empty")
+        return await client.send_message(chat_id, text)
 
     async def stop(self) -> None:
         clients, self._clients = self._clients, {}
