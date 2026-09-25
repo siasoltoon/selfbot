@@ -253,12 +253,24 @@ class TelegramAuthenticationService:
             if not code_hash:
                 await client.disconnect()
                 raise DependencyError("Telegram did not return a phone code hash", retryable=True)
+            now = time.monotonic()
+            telegram_timeout = getattr(sent, "timeout", None)
+            try:
+                telegram_timeout = int(telegram_timeout) if telegram_timeout is not None else None
+            except (TypeError, ValueError):
+                telegram_timeout = None
+            sent_type = getattr(getattr(sent, "type", None), "__class__", type(None)).__name__ or None
+            next_type = getattr(getattr(sent, "next_type", None), "__class__", type(None)).__name__ or None
             self._pending[owner_user_id] = PendingLogin(
                 owner_user_id=owner_user_id,
                 phone=phone,
                 client=client,
                 phone_code_hash=str(code_hash),
-                expires_at=time.monotonic() + self.ttl_seconds,
+                expires_at=now + self.ttl_seconds,
+                code_requested_at=now,
+                code_timeout_seconds=telegram_timeout,
+                code_type=sent_type,
+                next_code_type=next_type,
             )
             self.logger.info(
                 "telegram login code request succeeded",
@@ -268,6 +280,9 @@ class TelegramAuthenticationService:
                     "phone_masked": self._mask_phone(phone),
                     "elapsed_ms": round((time.monotonic() - started) * 1000),
                     "pending_ttl_seconds": self.ttl_seconds,
+                    "telegram_code_timeout_seconds": telegram_timeout,
+                    "telegram_code_type": sent_type,
+                    "telegram_next_code_type": next_type,
                 }},
             )
 
