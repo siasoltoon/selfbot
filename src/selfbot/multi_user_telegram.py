@@ -768,8 +768,7 @@ class MultiUserTelegramRuntime:
                     authorized = await authorized
                 if not authorized:
                     raise DependencyError("stored account is not authorized", retryable=False)
-                client.add_event_handler(self._handler(record.owner_user_id, record.telegram_account_id, outgoing=True))
-                client.add_event_handler(self._handler(record.owner_user_id, record.telegram_account_id, outgoing=False))
+                client.add_event_handler(self._handler(record.owner_user_id, record.telegram_account_id))
                 self._clients[record.telegram_account_id] = client
             except Exception:
                 result = client.disconnect()
@@ -777,7 +776,7 @@ class MultiUserTelegramRuntime:
                     await result
                 raise
 
-    def _handler(self, owner_user_id: str, account_id: str, *, outgoing: bool) -> Callable[[Any], Awaitable[None]]:
+    def _handler(self, owner_user_id: str, account_id: str) -> Callable[[Any], Awaitable[None]]:
         async def handler(event: Any) -> None:
             message = getattr(event, "message", event)
             occurred_at = getattr(message, "date", None) or datetime.now(timezone.utc)
