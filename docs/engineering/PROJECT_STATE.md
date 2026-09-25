@@ -2,9 +2,9 @@
 
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
-- Status: IN PROGRESS — final external verification gate; Telegram resend protocol hardening is implemented pending CI and real Telegram verification.
-- Latest merged implementation: PR #14, merge commit bb5cf7f70e5d48f6158eaa24da728e3000e53eae.
-- Latest merged implementation: PR #16, Telegram login code-expiry recovery.
+- Status: IN PROGRESS — final external verification gate; Telegram resend protocol hardening is merged and CI-verified, but real Telegram onboarding still requires a fresh external test.
+- Latest merged implementation: PR #17, Telegram resend protocol correction, merge commit df2ce3c646cf2033bf90dd4cba49d1ff3eb44b9e.
+- PR #16 remains the preceding code-expiry recovery implementation.
 - New hardening branch: Telegram resend protocol now reuses the same Telethon client so `send_code_request()` can follow Telethon's `auth.resendCode` path.
 
 ## Completed Code-Side Work
@@ -38,4 +38,4 @@ The repository does not claim production release merely from framework/unit/CI e
 - PR #16 adds recoverable code-expiry handling and `/resend`; follow-up hardening corrects `/resend` to reuse the existing client/auth hash instead of starting a separate authorization request.
 
 ## Next
-Run targeted CI for the resend-protocol fix, then repeat the real Telegram `/connect` flow. If the code expires, use `/resend` once and enter only the newly delivered code. Record the exact external result before advancing the final verification matrix.
+Repeat the real Telegram `/connect` flow against the merged PR #17 build. If the code expires, use `/resend` once and enter only the newest code. Record whether the linked session is persisted and usable before advancing the final verification matrix.
