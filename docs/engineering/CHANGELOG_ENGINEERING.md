@@ -87,3 +87,7 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added panel setup documentation in docs/TELEGRAM_GLOBAL_PANEL.md.
 - PR #23 merged to main as 68203f444ceae87159ecee813908c683297039ff.
 - Final feature CI c74a5a8194931a24807d35da19375346a92d610c passed on Python 3.11/3.12.
+
+
+## 2026-09-25 — Engineering fix
+- Fixed missing onboarding-bot `/panel` and `/پنل` routing; added regression test; merged PR #24 as `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
