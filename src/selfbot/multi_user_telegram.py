@@ -435,10 +435,16 @@ class TelegramAuthenticationService:
                         "elapsed_ms": round((time.monotonic() - started) * 1000),
                         "exception_type": type(exc).__name__,
                         "exception_module": type(exc).__module__,
-                        "error_message": self._safe_exception_message(exc),
+                        "error_message": self._safe_exception_message(exc, secrets=(password,)),
                     }},
                     exc_info=True,
                 )
+                # A successful 2FA sign-in creates a real Telegram session even
+                # if durable persistence fails afterwards. Revoke that session
+                # before reporting failure so Telegram does not retain a
+                # connected session that the application cannot safely manage.
+                if type(exc).__name__ != "PasswordHashInvalidError":
+                    await self._abort_authenticated_client(item.client)
                 raise
             finally:
                 password = ""
@@ -635,6 +641,37 @@ class TelegramAuthenticationService:
         if item is None:
             raise NotFoundError("no active Telegram login; start again")
         return item
+
+    async def _abort_authenticated_client(self, client: AuthClient) -> None:
+        try:
+            log_out = getattr(client, "log_out", None)
+            if callable(log_out):
+                result = log_out()
+                if inspect.isawaitable(result):
+                    await result
+        except Exception as exc:
+            self.logger.warning(
+                "telegram authenticated session cleanup failed",
+                extra={"context": {
+                    "stage": "authenticated_session_cleanup",
+                    "exception_type": type(exc).__name__,
+                    "exception_module": type(exc).__module__,
+                    "error_message": self._safe_exception_message(exc),
+                }},
+            )
+        finally:
+            try:
+                await client.disconnect()
+            except Exception as exc:
+                self.logger.warning(
+                    "telegram client disconnect after auth failure failed",
+                    extra={"context": {
+                        "stage": "authenticated_session_disconnect",
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc),
+                    }},
+                )
 
     async def _finalize_client(self, owner_user_id: str, client: AuthClient) -> str:
         me = await client.get_me()
