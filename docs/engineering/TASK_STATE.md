@@ -4,12 +4,18 @@
 Diagnose and complete the first real multi-user Telegram onboarding verification.
 
 ## Status
-IN PROGRESS — code-side diagnostics implemented and CI verified; external Telegram authentication result pending.
+IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery hardening is implemented and CI-verified; successful external onboarding is still pending.
 
 ## Latest Verified Implementation
 - PR #14 implements multi-user onboarding and independent account runtime.
 - PR #15 adds secure authentication lifecycle/error diagnostics.
 - CI 36182724874 passed on Python 3.11 and 3.12.
+
+## Latest Recovery Change
+- Telegram `PhoneCodeExpiredError` no longer forces the user to restart the whole flow.
+- `/resend` creates a fresh transient client, requests a fresh code/hash, swaps the pending client safely, and disconnects the old client.
+- The latest Telegram code delivery type/timeout metadata is logged without exposing the code or hash.
+- Regression coverage verifies expired-code recovery and fresh-client replacement.
 
 ## Latest Diagnostic Change
 - Authentication failures now log structured stage, Telegram exception type/module, sanitized exception message and traceback.
