@@ -235,6 +235,12 @@ class TelegramAuthenticationService:
             if item:
                 await item.client.disconnect()
 
+    async def cancel_all(self) -> None:
+        async with self._lock:
+            items, self._pending = self._pending, {}
+            for item in items.values():
+                await item.client.disconnect()
+
 
 class MultiUserTelegramRuntime:
     """Runs every connected user account as an independent Telethon client."""
