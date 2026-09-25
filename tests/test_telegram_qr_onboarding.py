@@ -38,6 +38,7 @@ class FakeQRClient:
         self.qr = FakeQR(require_2fa=require_2fa, ttl_seconds=qr_ttl_seconds)
         self.connected = False
         self.disconnected = False
+        self.logged_out = False
         self.ignored_ids = None
         self.password = None
 
@@ -46,6 +47,9 @@ class FakeQRClient:
 
     async def disconnect(self):
         self.disconnected = True
+
+    async def log_out(self):
+        self.logged_out = True
 
     async def qr_login(self, ignored_ids=None):
         self.ignored_ids = ignored_ids
@@ -130,6 +134,35 @@ def test_qr_login_requires_2fa_then_finalizes():
     assert clients[0].disconnected is True
     assert "owner-1" not in auth._pending_qr
     assert store.get_connected("owner-1").telegram_account_id == "654321"
+
+
+
+
+def test_qr_2fa_persistence_failure_revokes_authenticated_session():
+    db, store = make_store()
+
+    def failing_save(owner_user_id, telegram_account_id, session):
+        raise RuntimeError("database unavailable")
+
+    store.save = failing_save
+    clients = []
+
+    def factory(*_):
+        client = FakeQRClient(require_2fa=True, qr_ttl_seconds=1)
+        clients.append(client)
+        return client
+
+    auth = TelegramAuthenticationService("12345", "hash", store, client_factory=factory, ttl_seconds=5)
+
+    async def run():
+        await auth.begin_qr("owner-1")
+        assert await auth._pending_qr["owner-1"].wait_task == "2fa_required"
+        with pytest.raises(RuntimeError, match="database unavailable"):
+            await auth.verify_qr_2fa("owner-1", "secret-password")
+
+    asyncio.run(run())
+    assert clients[0].logged_out is True
+    assert clients[0].disconnected is True
 
 
 def test_qr_login_cancel_disconnects_transient_client():
