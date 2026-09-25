@@ -8,6 +8,7 @@ are encrypted at rest.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import inspect
 import re
 import time
@@ -138,6 +139,26 @@ class TelegramAuthenticationService:
         self.ttl_seconds = ttl_seconds
         self._pending: dict[str, PendingLogin] = {}
         self._lock = asyncio.Lock()
+        self.logger = get_logger(__name__)
+
+    @staticmethod
+    def _mask_phone(phone: str) -> str:
+        normalized = re.sub(r"\s+", "", phone)
+        if len(normalized) <= 4:
+            return "***"
+        return f"{normalized[:3]}***{normalized[-2:]}"
+
+    @staticmethod
+    def _owner_fingerprint(owner_user_id: str) -> str:
+        return hashlib.sha256(owner_user_id.encode("utf-8")).hexdigest()[:12]
+
+    @staticmethod
+    def _safe_exception_message(exc: Exception, *, secrets: tuple[str, ...] = ()) -> str:
+        message = str(exc).replace("\n", " ")[:500]
+        for secret in secrets:
+            if secret:
+                message = message.replace(secret, "[REDACTED]")
+        return message
 
     def _new_client(self) -> AuthClient:
         if self.client_factory:
@@ -161,7 +182,27 @@ class TelegramAuthenticationService:
         for key in expired:
             item = self._pending.pop(key, None)
             if item:
-                await item.client.disconnect()
+                self.logger.info(
+                    "telegram login expired",
+                    extra={"context": {
+                        "stage": "cleanup_expired",
+                        "owner_fingerprint": self._owner_fingerprint(item.owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                    }},
+                )
+                try:
+                    await item.client.disconnect()
+                except Exception as exc:
+                    self.logger.warning(
+                        "telegram login client cleanup failed",
+                        extra={"context": {
+                            "stage": "cleanup_expired_disconnect",
+                            "owner_fingerprint": self._owner_fingerprint(item.owner_user_id),
+                            "exception_type": type(exc).__name__,
+                            "exception_module": type(exc).__module__,
+                            "error_message": self._safe_exception_message(exc),
+                        }},
+                    )
 
     async def begin(self, owner_user_id: str, phone: str) -> None:
         phone = self._normalize_phone(phone)
@@ -171,8 +212,38 @@ class TelegramAuthenticationService:
             if old:
                 await old.client.disconnect()
             client = self._new_client()
-            await client.connect()
-            sent = await client.send_code_request(phone)
+            started = time.monotonic()
+            self.logger.info(
+                "telegram login started",
+                extra={"context": {
+                    "stage": "begin",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(phone),
+                    "ttl_seconds": self.ttl_seconds,
+                }},
+            )
+            try:
+                await client.connect()
+                sent = await client.send_code_request(phone)
+            except Exception as exc:
+                self.logger.error(
+                    "telegram login code request failed",
+                    extra={"context": {
+                        "stage": "send_code_request",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(phone),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc, secrets=(phone,)),
+                    }},
+                    exc_info=True,
+                )
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
+                raise
             code_hash = getattr(sent, "phone_code_hash", None)
             if not code_hash:
                 await client.disconnect()
@@ -184,22 +255,83 @@ class TelegramAuthenticationService:
                 phone_code_hash=str(code_hash),
                 expires_at=time.monotonic() + self.ttl_seconds,
             )
+            self.logger.info(
+                "telegram login code request succeeded",
+                extra={"context": {
+                    "stage": "send_code_request",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(phone),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                    "pending_ttl_seconds": self.ttl_seconds,
+                }},
+            )
 
     async def verify_code(self, owner_user_id: str, code: str) -> str:
         async with self._lock:
             item = await self._get_pending(owner_user_id)
-            if not re.fullmatch(r"\d{3,8}", code.strip()):
+            normalized_code = code.strip()
+            if not re.fullmatch(r"\d{3,8}", normalized_code):
+                self.logger.warning(
+                    "telegram login code validation failed",
+                    extra={"context": {
+                        "stage": "verify_code_validation",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "reason": "invalid_format",
+                    }},
+                )
                 raise ValidationError("Telegram login code must contain only digits")
+            started = time.monotonic()
+            self.logger.info(
+                "telegram login code verification started",
+                extra={"context": {
+                    "stage": "verify_code",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                    "pending_age_seconds": round(max(0.0, time.monotonic() - (item.expires_at - self.ttl_seconds)), 3),
+                }},
+            )
             try:
                 await item.client.sign_in(
                     phone=item.phone,
-                    code=code.strip(),
+                    code=normalized_code,
                     phone_code_hash=item.phone_code_hash,
                 )
             except Exception as exc:
                 if exc.__class__.__name__ == "SessionPasswordNeededError":
+                    self.logger.info(
+                        "telegram login code accepted; 2fa required",
+                        extra={"context": {
+                            "stage": "verify_code",
+                            "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                            "phone_masked": self._mask_phone(item.phone),
+                            "elapsed_ms": round((time.monotonic() - started) * 1000),
+                            "exception_type": type(exc).__name__,
+                        }},
+                    )
                     return "2fa_required"
+                self.logger.error(
+                    "telegram login code verification failed",
+                    extra={"context": {
+                        "stage": "verify_code",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc, secrets=(normalized_code, item.phone)),
+                    }},
+                    exc_info=True,
+                )
                 raise
+            self.logger.info(
+                "telegram login code accepted",
+                extra={"context": {
+                    "stage": "verify_code",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                }},
+            )
             return await self._finalize(owner_user_id, item)
 
     async def verify_2fa(self, owner_user_id: str, password: str) -> str:
@@ -207,11 +339,44 @@ class TelegramAuthenticationService:
             raise ValidationError("2FA password must not be empty")
         async with self._lock:
             item = await self._get_pending(owner_user_id)
+            started = time.monotonic()
+            self.logger.info(
+                "telegram 2fa verification started",
+                extra={"context": {
+                    "stage": "verify_2fa",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                }},
+            )
             try:
                 await item.client.sign_in(password=password)
+            except Exception as exc:
+                self.logger.error(
+                    "telegram 2fa verification failed",
+                    extra={"context": {
+                        "stage": "verify_2fa",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc),
+                    }},
+                    exc_info=True,
+                )
+                raise
             finally:
                 # Never retain the password after this call returns.
                 password = ""
+            self.logger.info(
+                "telegram 2fa verification accepted",
+                extra={"context": {
+                    "stage": "verify_2fa",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                }},
+            )
             return await self._finalize(owner_user_id, item)
 
     async def _get_pending(self, owner_user_id: str) -> PendingLogin:
@@ -222,6 +387,15 @@ class TelegramAuthenticationService:
         return item
 
     async def _finalize(self, owner_user_id: str, item: PendingLogin) -> str:
+        started = time.monotonic()
+        self.logger.info(
+            "telegram login finalization started",
+            extra={"context": {
+                "stage": "finalize",
+                "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                "phone_masked": self._mask_phone(item.phone),
+            }},
+        )
         me = await item.client.get_me()
         account_id = str(getattr(me, "id", "") or "")
         if not account_id:
@@ -230,6 +404,16 @@ class TelegramAuthenticationService:
         self.store.save(owner_user_id, account_id, session)
         self._pending.pop(owner_user_id, None)
         await item.client.disconnect()
+        self.logger.info(
+            "telegram login finalized successfully",
+            extra={"context": {
+                "stage": "finalize",
+                "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                "phone_masked": self._mask_phone(item.phone),
+                "account_id": account_id,
+                "elapsed_ms": round((time.monotonic() - started) * 1000),
+            }},
+        )
         return account_id
 
     async def cancel(self, owner_user_id: str) -> None:
