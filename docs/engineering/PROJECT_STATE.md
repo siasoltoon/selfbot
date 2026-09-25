@@ -2,10 +2,10 @@
 
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
-- Status: IN PROGRESS — final external verification gate; Telegram code-expiry recovery hardening is implemented and CI-verified.
+- Status: IN PROGRESS — final external verification gate; Telegram resend protocol hardening is implemented pending CI and real Telegram verification.
 - Latest merged implementation: PR #14, merge commit bb5cf7f70e5d48f6158eaa24da728e3000e53eae.
-- Latest unmerged hardening: PR #15, secure Telegram authentication diagnostics.
-- CI for PR #15: run 36182724874 PASS on Python 3.11 and 3.12.
+- Latest merged implementation: PR #16, Telegram login code-expiry recovery.
+- New hardening branch: Telegram resend protocol now reuses the same Telethon client so `send_code_request()` can follow Telethon's `auth.resendCode` path.
 
 ## Completed Code-Side Work
 - Phases 0-3 foundation/plugin system.
@@ -35,7 +35,7 @@ The repository does not claim production release merely from framework/unit/CI e
 - Persistent session records use encrypted storage and support revoke/disconnect.
 - Connected accounts run as independent Telethon clients and route commands per linked account.
 - PR #15 adds lifecycle/error diagnostics while redacting login codes, passwords, phone_code_hash, API credentials, and session material.
-- CI run 36182724874 PASS on Python 3.11/3.12.
+- PR #16 adds recoverable code-expiry handling and `/resend`; follow-up hardening corrects `/resend` to reuse the existing client/auth hash instead of starting a separate authorization request.
 
 ## Next
-Merge PR #15 after its green CI, then repeat the real Telegram `/connect` login with the test account and inspect the new sanitized diagnostics if authentication fails. Record the exact external result before advancing the final verification matrix.
+Run targeted CI for the resend-protocol fix, then repeat the real Telegram `/connect` flow. If the code expires, use `/resend` once and enter only the newly delivered code. Record the exact external result before advancing the final verification matrix.

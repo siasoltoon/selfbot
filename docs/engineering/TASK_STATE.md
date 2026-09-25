@@ -13,7 +13,7 @@ IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery harde
 
 ## Latest Recovery Change
 - Telegram `PhoneCodeExpiredError` no longer forces the user to restart the whole flow.
-- `/resend` creates a fresh transient client, requests a fresh code/hash, swaps the pending client safely, and disconnects the old client.
+- `/resend` was initially implemented with a fresh client, but real testing showed `PhoneCodeExpiredError` persisted. The implementation is being corrected to reuse the existing transient client, preserving Telethon's internal phone-code hash so its `send_code_request()` can invoke `auth.resendCode`.
 - The latest Telegram code delivery type/timeout metadata is logged without exposing the code or hash.
 - Regression coverage verifies expired-code recovery and fresh-client replacement.
 
@@ -24,8 +24,9 @@ IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery harde
 - Regression coverage verifies that sensitive test values are excluded from authentication error logs.
 
 ## Remaining Operator/Environment Work
-1. Repeat real Telegram `/connect` flow and capture sanitized runtime result.
-2. If authentication fails, identify the exact Telegram exception from diagnostics and create a targeted fix.
+1. Run CI for the resend-protocol correction.
+2. Repeat real Telegram `/connect` flow and capture sanitized runtime result.
+3. If authentication still fails, identify the exact Telegram exception and create the next targeted fix.
 3. Verify successful session persistence and linked-account message routing.
 4. Continue the broader external verification matrix: providers, worker, OCR, DB, backup/restore, deployment, performance and security.
 

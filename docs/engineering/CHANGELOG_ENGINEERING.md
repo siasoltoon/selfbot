@@ -45,3 +45,9 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added regression coverage ensuring authentication secrets do not appear in diagnostics.
 - PR #15 CI run 36182724874 passed on Python 3.11 and 3.12.
 - Next external step: repeat real Telegram `/connect` and use the sanitized diagnostic event to identify any remaining authentication failure.
+
+## 2026-09-25 — Telegram resend protocol correction
+- Real testing reproduced `PhoneCodeExpiredError` even after the fresh-client `/resend` flow.
+- Verified against Telegram/Telethon behavior that a true resend preserves the existing `phone_code_hash`; Telethon's `send_code_request()` uses `auth.resendCode` when its internal hash is present.
+- Corrected `/resend` to reuse the existing transient client instead of creating a second authorization client.
+- Updated regression coverage to verify the same client handles the initial request, resend, and verification.

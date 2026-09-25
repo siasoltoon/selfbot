@@ -23,7 +23,7 @@
 ## Decision: Telegram authentication code recovery
 - Treat `PhoneCodeExpiredError` and `PhoneCodeInvalidError` as recoverable interaction errors while the transient login remains valid.
 - Preserve the pending flow rather than forcing a complete `/connect` restart.
-- Explicit `/resend` uses a fresh transient Telethon client so a stale internal phone-code hash cannot be reused accidentally.
+- Explicit `/resend` reuses the existing transient Telethon client so its internal phone-code hash is preserved and `send_code_request()` can use Telegram's `auth.resendCode` protocol. A new client would lose that protocol state and start a new authorization request.
 - Never automatically loop/resend codes on failure; Telegram-side rate limits remain authoritative.
 
 ## Decision: Telegram authentication diagnostics
