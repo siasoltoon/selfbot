@@ -114,6 +114,7 @@ def test_qr_login_requires_2fa_then_finalizes():
     async def run():
         await auth.begin_qr("owner-1")
         assert await auth._pending_qr["owner-1"].wait_task == "2fa_required"
+        assert auth._pending_qr["owner-1"].expires_at > 0
         return await auth.verify_qr_2fa("owner-1", "secret-password")
 
     assert asyncio.run(run()) == "654321"
