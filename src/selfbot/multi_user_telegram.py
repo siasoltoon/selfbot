@@ -1063,6 +1063,29 @@ class OnboardingBot:
                 "در صورت فعال بودن، فقط رمز دومرحله‌ای به‌صورت موقت دریافت می‌شود."
             )
             return
+        if lower in {"/panel", "/پنل"}:
+            if self.capabilities is None or self.panel_token_factory is None:
+                await event.reply("پنل قابلیت‌ها پیکربندی نشده است.")
+                return
+            try:
+                self.store.get_connected(user_id)
+                text, buttons = self._panel_view(user_id)
+                await event.reply(text, buttons=buttons)
+            except NotFoundError:
+                await event.reply("ابتدا اکانت تلگرام را با /connect متصل کن.")
+            except Exception as exc:
+                self.logger.warning(
+                    "telegram capability panel command failed",
+                    extra={"context": {
+                        "stage": "bot_panel_command",
+                        "owner_fingerprint": self.auth._owner_fingerprint(user_id),
+                        "exception_type": type(exc).__name__,
+                        "error_message": self.auth._safe_exception_message(exc),
+                    }},
+                )
+                await event.reply("نمایش پنل انجام نشد. وضعیت اتصال و تنظیمات Inline Mode را بررسی کن.")
+            return
+
         if lower == "/connect":
             self._states[user_id] = "qr"
             try:
