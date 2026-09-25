@@ -15,6 +15,11 @@
 - Both compile and pytest steps completed successfully.
 - New regression test covers safe Telegram authentication error diagnostics.
 
+## Telegram Expiry Recovery Verification
+- PR #16 CI run 36184453774 — PASS on Python 3.11 and 3.12.
+- Coverage includes fresh-client resend after `PhoneCodeExpiredError`, pending-state preservation, code-attempt lifecycle metadata, and safe recovery cleanup.
+- Real Telegram resend/login remains environment-dependent and is not marked PASS.
+
 ## Remaining External Verification
 - Real Telegram login/session and message flow
 - Alembic migration smoke test against real target database
