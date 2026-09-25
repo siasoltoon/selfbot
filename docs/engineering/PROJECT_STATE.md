@@ -3,8 +3,8 @@
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
 - Status: IN PROGRESS — final external verification gate.
-- Latest merged implementation: PR #11, merge commit a29ff2f56047c2b8b6873ca89d48ee8f91040c78.
-- CI: run 35614933655 PASS on Python 3.11 and 3.12.
+- Latest merged implementation: PR #14, merge commit bb5cf7f70e5d48f6158eaa24da728e3000e53eae.
+- CI: run 36179129789 PASS on Python 3.11 and 3.12.
 
 ## Completed Code-Side Work
 - Phases 0-3 foundation/plugin system.
