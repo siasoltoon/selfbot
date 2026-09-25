@@ -19,7 +19,9 @@ class PanelTokenSigner:
         try:
             padded = token + "=" * (-len(token) % 4)
             raw = base64.urlsafe_b64decode(padded.encode("ascii"))
-            payload, signature = raw.rsplit(b".", 1)
+            if len(raw) <= 13 or raw[-13:-12] != b".":
+                return None
+            payload, signature = raw[:-13], raw[-12:]
             expected = hmac.new(self._key, payload, hashlib.sha256).digest()[:12]
             if not hmac.compare_digest(signature, expected):
                 return None
