@@ -29,6 +29,7 @@ class Settings:
     telegram_api_id: str | None
     telegram_api_hash: str | None
     telegram_session: str | None
+    telegram_session_is_string: bool
     pc_worker_enabled: bool
     pc_worker_url: str | None
     pc_worker_token: str | None
@@ -68,6 +69,7 @@ def load_settings() -> Settings:
         telegram_api_id=os.getenv("TELEGRAM_API_ID") or None,
         telegram_api_hash=os.getenv("TELEGRAM_API_HASH") or None,
         telegram_session=os.getenv("TELEGRAM_SESSION") or None,
+        telegram_session_is_string=_bool_env("TELEGRAM_SESSION_IS_STRING", True),
         pc_worker_enabled=worker_enabled,
         pc_worker_url=worker_url,
         pc_worker_token=worker_token,
