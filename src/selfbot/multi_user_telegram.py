@@ -315,11 +315,13 @@ class TelegramAuthenticationService:
                     }},
                     exc_info=True,
                 )
+                failed_item = self._pending_qr.pop(owner_user_id, None)
+                if failed_item and failed_item.wait_task and not failed_item.wait_task.done():
+                    failed_item.wait_task.cancel()
                 try:
                     await client.disconnect()
                 except Exception:
                     pass
-                self._pending_qr.pop(owner_user_id, None)
                 raise
             self.logger.info(
                 "telegram qr login challenge created",
