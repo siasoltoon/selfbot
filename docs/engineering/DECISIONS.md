@@ -45,3 +45,9 @@
 - After QR acceptance with 2FA required, extend the pending transient session deadline to the configured authentication-service TTL.
 - Keep the 2FA password transient and out of logs/storage.
 - If future lifecycle states make one `expires_at` field ambiguous, split QR and post-scan 2FA deadlines into separate fields rather than overloading one timestamp.
+
+## Decision: Post-auth session persistence safety
+- Use Telethon `StringSession()` for transient QR authentication clients so successful login always has a serializable session representation.
+- Treat encrypted durable session persistence as part of the application-level authentication transaction.
+- If Telegram authentication succeeds but persistence fails, attempt `log_out()` before disconnecting the authenticated client; never silently leave an authenticated session unmanaged.
+- Distinguish invalid 2FA credentials from infrastructure/persistence failures in user-facing onboarding responses.
