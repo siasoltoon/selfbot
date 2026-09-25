@@ -31,7 +31,7 @@
 Status: FRAMEWORK IMPLEMENTED; REAL DATASET/PROVIDER BENCHMARK REMAINS
 
 ## Phase 22 — Adversarial / Failure Testing
-Status: HARNESS IMPLEMENTED; FULL EXECUTION SUITE REMAINS
+STATUS: HARNESS IMPLEMENTED; FULL EXECUTION SUITE REMAINS
 
 ## Phase 23 — UX Polish
 Status: VALIDATION HELPERS IMPLEMENTED; REAL TELEGRAM/UI VERIFICATION REMAINS
@@ -40,18 +40,20 @@ Status: VALIDATION HELPERS IMPLEMENTED; REAL TELEGRAM/UI VERIFICATION REMAINS
 Status: CORE EVIDENCE BOUNDARY IMPLEMENTED; PRODUCTION EXECUTION REMAINS
 
 ## Phase 25 — Final Release Audit
-Status: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIRONMENT TESTS
+STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIRONMENT TESTS
 
 ## Multi-user Telegram Runtime Gate
 - Multi-user onboarding/authentication/session encryption/runtime routing code implemented.
 - Secure authentication diagnostics added and covered by regression tests.
-- Expired/invalid code recovery now preserves the transient login state and supports explicit `/resend`; follow-up hardening reuses the same transient client so Telethon can invoke the official resend-code protocol.
+- Expired/invalid code recovery remains available for compatibility; production onboarding uses QR.
 - PR #15 CI 36182724874 is PASS on Python 3.11/3.12.
 - PR #16 CI 36184453774 is PASS on Python 3.11/3.12.
 - PR #17 resend-protocol hardening CI 36185340785 is PASS on Python 3.11/3.12.
 - PR #18 QR onboarding CI 36186445250 is PASS on Python 3.11/3.12.
-- Production onboarding now uses Telethon QR login with tested PNG generation, wait lifecycle, cancellation, 2FA continuation and encrypted session finalization.
-- Real Telegram QR onboarding remains operator-dependent.
+- PR #19 QR post-scan 2FA lifetime fix CI 36187266466 is PASS on Python 3.11/3.12.
+- PR #19 is merged to main as 76a4e9d2887f1bebfee9eb0c5b5c5f5486294787.
+- PR #19 specifically keeps the transient authenticated client alive for the configured service TTL after QR acceptance and 2FA request.
+- Real Telegram QR+2FA onboarding remains operator-dependent.
 - Real user login, 2FA, persistent database and message-flow verification remains operator-dependent.
 
 ## Runtime Deployment Gate
