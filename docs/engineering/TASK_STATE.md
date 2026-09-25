@@ -25,5 +25,10 @@ All implementation work that can be responsibly completed without external opera
 9. Final security/dependency audit.
 10. Final Phase 25 evidence review.
 
+## Latest Multi-user Telegram Task
+- PR #14 implements multi-user onboarding and independent account runtime.
+- CI 36179020202 PASS on Python 3.11/3.12.
+- Real test is now operator-dependent: configure bot/API/database/encryption secrets and perform `/connect` with a test Telegram account.
+
 ## Rule
 Do not fabricate PASS for environment-dependent checks. Any failure discovered there becomes a new targeted engineering task.
