@@ -12,7 +12,7 @@ dependencies = [
     "SQLAlchemy>=2,<3",
     "alembic>=1.13,<2",
     "croniter>=3,<7",
-    "telethon>=1.36,<2",
+    "telethon>=1.36,<2",\n    "cryptography>=42,<47",
 ]
 
 [project.optional-dependencies]
