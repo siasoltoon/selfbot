@@ -22,8 +22,8 @@
 
 ## Decision: Telegram authentication code recovery
 - Treat `PhoneCodeExpiredError` and `PhoneCodeInvalidError` as recoverable interaction errors while the transient login remains valid.
-- Preserve the pending flow rather than forcing a complete `/connect` restart.
-- Explicit `/resend` reuses the existing transient Telethon client so its internal phone-code hash is preserved and `send_code_request()` can use Telegram's `auth.resendCode` protocol. A new client would lose that protocol state and start a new authorization request. This was corrected after real testing showed the fresh-client approach still produced `PhoneCodeExpiredError`.
+- Preserve the pending flow rather than forcing a complete /connect restart.
+- Explicit /resend reuses the existing transient Telethon client so its internal phone-code hash is preserved and `send_code_request()` can use Telegram's `auth.resendCode` protocol. A new client would lose that protocol state and start a new authorization request.
 - Never automatically loop/resend codes on failure; Telegram-side rate limits remain authoritative.
 
 ## Decision: Telegram authentication diagnostics
@@ -32,10 +32,16 @@
 - Redact login codes, 2FA passwords, phone_code_hash, API credentials and session material from exception messages.
 - Preserve the original exception type for programmatic handling and keep user-facing errors generic until the exact failure is understood.
 
-
 ## Decision: QR-first Telegram onboarding
 - Real runtime testing showed repeated `PhoneCodeExpiredError` even with the corrected resend protocol; observed delivery type was `SentCodeTypeApp`.
 - Telethon documents `qr_login()` plus `QRLogin.wait()` as a supported login flow; the wait must run while the QR is being scanned.
 - The onboarding bot generates the QR image in memory, sends it as short-lived Telegram media, removes the QR message after completion/expiry/failure, and never logs the QR URL/token.
 - QR login may require the account's 2FA password after scanning; it remains transient and is never persisted or logged.
 - A second already-authorized Telegram device is required to scan the QR shown by the onboarding bot; same-device phone-only onboarding is not claimed as supported by this transport.
+
+## Decision: QR post-scan 2FA lifetime
+- The real QR test reached `SessionPasswordNeededError` after QR acceptance, then the transient client was disconnected before 2FA completion because the original QR expiry remained active.
+- The failure was a lifecycle timeout, not evidence of an invalid 2FA password.
+- After QR acceptance with 2FA required, extend the pending transient session deadline to the configured authentication-service TTL.
+- Keep the 2FA password transient and out of logs/storage.
+- If future lifecycle states make one `expires_at` field ambiguous, split QR and post-scan 2FA deadlines into separate fields rather than overloading one timestamp.
