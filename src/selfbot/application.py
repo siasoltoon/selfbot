@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from .bootstrap import Runtime
-from .errors import classify_error
+from .errors import ConfigurationError, classify_error
 from .logging import get_logger
 from .runtime_router import TelegramRuntimeRouter
 from .telegram import TelegramAdapter
@@ -76,7 +76,7 @@ class Application:
 def create_application(runtime: Runtime) -> Application:
     if runtime.settings.telegram_onboarding_bot_token and runtime.settings.telegram_session_encryption_key:
         if not runtime.settings.telegram_api_id or not runtime.settings.telegram_api_hash:
-            raise ValueError("Telegram API credentials are required for multi-user mode")
+            raise ConfigurationError("Telegram API credentials are required for multi-user mode")
         store = TelegramSessionStore(runtime.database, SessionCipher(runtime.settings.telegram_session_encryption_key))
         auth = TelegramAuthenticationService(runtime.settings.telegram_api_id, runtime.settings.telegram_api_hash, store)
         telegram = MultiUserTelegramRuntime(store, runtime.services.events)
