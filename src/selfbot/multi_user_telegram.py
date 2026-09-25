@@ -287,19 +287,19 @@ class TelegramAuthenticationService:
             )
 
     async def resend_code(self, owner_user_id: str) -> None:
-        """Request a fresh Telegram login code using a fresh transient client."""
+        """Request a fresh code through Telegram's resend-code protocol.
+
+        The same transient client must be reused so Telethon can carry the
+        existing phone-code hash and invoke auth.resendCode. Creating a fresh
+        client here loses that protocol state and falls back to auth.sendCode,
+        which is a new authorization request rather than a true resend.
+        """
         async with self._lock:
             item = await self._get_pending(owner_user_id)
             started = time.monotonic()
-            new_client = self._new_client()
             try:
-                await new_client.connect()
-                sent = await new_client.send_code_request(item.phone)
+                sent = await item.client.send_code_request(item.phone)
             except Exception as exc:
-                try:
-                    await new_client.disconnect()
-                except Exception:
-                    pass
                 self.logger.error(
                     "telegram login code resend failed",
                     extra={"context": {
@@ -316,10 +316,7 @@ class TelegramAuthenticationService:
                 raise
             code_hash = getattr(sent, "phone_code_hash", None)
             if not code_hash:
-                await new_client.disconnect()
                 raise DependencyError("Telegram did not return a phone code hash for resend", retryable=True)
-            old_client = item.client
-            item.client = new_client
             item.phone_code_hash = str(code_hash)
             now = time.monotonic()
             item.code_requested_at = now
@@ -333,17 +330,6 @@ class TelegramAuthenticationService:
             item.code_type = getattr(getattr(sent, "type", None), "__class__", type(None)).__name__ or None
             item.next_code_type = getattr(getattr(sent, "next_type", None), "__class__", type(None)).__name__ or None
             item.code_attempts = 0
-            try:
-                await old_client.disconnect()
-            except Exception:
-                self.logger.warning(
-                    "telegram previous login client cleanup failed",
-                    extra={"context": {
-                        "stage": "resend_code_cleanup",
-                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                        "phone_masked": self._mask_phone(item.phone),
-                    }},
-                )
             self.logger.info(
                 "telegram login code resent",
                 extra={"context": {
