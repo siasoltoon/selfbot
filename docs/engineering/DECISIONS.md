@@ -12,3 +12,11 @@
 - Phase 22 failures are explicit outcomes; the harness never converts an exception into a claimed correct answer.
 - Phase 23 Persian UX requires explicit RTL metadata.
 - Phase 24/25 release status is evidence-driven; NOT_RUN/BLOCKED evidence prevents final release pass.
+
+
+## Decision: Multi-user Telegram onboarding
+- Use a normal BotFather bot for onboarding and independent Telethon user clients for linked accounts.
+- Accept phone number, Telegram login code, and optional 2FA password only as transient authentication input.
+- Persist only the resulting Telethon StringSession, encrypted at rest with a deployment-provided Fernet key.
+- Do not rely on GitHub-hosted runner local SQLite for durable multi-user sessions; persistent PostgreSQL is the intended runtime store.
+- Keep the legacy single-session adapter available for compatibility while multi-user mode is enabled by onboarding token + session encryption key.
