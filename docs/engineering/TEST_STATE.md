@@ -29,6 +29,9 @@
 - PR #19 regression test uses a 1-second QR TTL and 5-second service TTL, verifies the post-scan expiry is extended, and completes the simulated 2FA flow.
 - PR #19 was merged to main as 76a4e9d2887f1bebfee9eb0c5b5c5f5486294787.
 - Real Telegram QR+2FA onboarding remains NOT PASS until the operator reruns the external flow successfully.
+- Real test interpretation: Telegram-side security notification indicated authentication succeeded; the application failure occurred during durable session persistence, not at 2FA validation.
+- PR #20 CI run 36187991097 — PASS; verifies production QR client uses `StringSession` and persists the serialized session.
+- PR #21 CI run 36188334722 — FAIL on the first attempt due to a test expectation mismatch; fixed. PR #21 CI run 36188868237 — PASS on Python 3.11/3.12; verifies authenticated-session revocation when persistence fails.
 
 ## Remaining External Verification
 - Real Telegram login/session and message flow
