@@ -119,6 +119,7 @@ def test_qr_login_requires_2fa_then_finalizes():
     assert asyncio.run(run()) == "654321"
     assert clients[0].password == "secret-password"
     assert clients[0].disconnected is True
+    assert "owner-1" not in auth._pending_qr
     assert store.get_connected("owner-1").telegram_account_id == "654321"
 
 
