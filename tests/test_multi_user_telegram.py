@@ -151,20 +151,25 @@ def test_authentication_can_resend_after_expired_code():
     clients = []
 
     class ExpiringClient(FakeClient):
-        def __init__(self, expires=False):
+        def __init__(self):
             super().__init__()
-            self.expires = expires
             self.sign_in_attempts = 0
+            self.code_requests = 0
+
+        async def send_code_request(self, phone):
+            self.code_requests += 1
+            self.phone = phone
+            return SentCode(phone_code_hash=f"hash-{self.code_requests}")
 
         async def sign_in(self, phone=None, code=None, *, password=None, phone_code_hash=None):
             self.sign_in_attempts += 1
-            if self.expires:
+            if self.sign_in_attempts == 1:
                 raise type("PhoneCodeExpiredError", (Exception,), {})("The confirmation code has expired")
-            assert phone_code_hash == "hash-123"
+            assert phone_code_hash == "hash-2"
             return FakeUser()
 
     def factory(*_):
-        client = ExpiringClient(expires=not clients)
+        client = ExpiringClient()
         clients.append(client)
         return client
 
@@ -179,9 +184,9 @@ def test_authentication_can_resend_after_expired_code():
         return await auth.verify_code("owner-1", "67890")
 
     assert asyncio.run(run()) == "123456"
-    assert len(clients) == 2
+    assert len(clients) == 1
+    assert clients[0].code_requests == 2
     assert clients[0].disconnected is True
-    assert clients[1].disconnected is True
     assert not auth._pending
 
 
