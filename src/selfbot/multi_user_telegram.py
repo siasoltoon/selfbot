@@ -286,6 +286,59 @@ class TelegramAuthenticationService:
                 }},
             )
 
+    async def resend_code(self, owner_user_id: str) -> None:
+        """Request a fresh Telegram login code without creating a second client."""
+        async with self._lock:
+            item = await self._get_pending(owner_user_id)
+            started = time.monotonic()
+            try:
+                sent = await item.client.send_code_request(item.phone)
+            except Exception as exc:
+                self.logger.error(
+                    "telegram login code resend failed",
+                    extra={"context": {
+                        "stage": "resend_code",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "phone_masked": self._mask_phone(item.phone),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc, secrets=(item.phone,)),
+                    }},
+                    exc_info=True,
+                )
+                raise
+            code_hash = getattr(sent, "phone_code_hash", None)
+            if not code_hash:
+                raise DependencyError("Telegram did not return a phone code hash for resend", retryable=True)
+            now = time.monotonic()
+            telegram_timeout = getattr(sent, "timeout", None)
+            try:
+                telegram_timeout = int(telegram_timeout) if telegram_timeout is not None else None
+            except (TypeError, ValueError):
+                telegram_timeout = None
+            sent_type = getattr(getattr(sent, "type", None), "__class__", type(None)).__name__ or None
+            next_type = getattr(getattr(sent, "next_type", None), "__class__", type(None)).__name__ or None
+            item.phone_code_hash = str(code_hash)
+            item.code_requested_at = now
+            item.expires_at = now + self.ttl_seconds
+            item.code_timeout_seconds = telegram_timeout
+            item.code_type = sent_type
+            item.next_code_type = next_type
+            item.code_attempts = 0
+            self.logger.info(
+                "telegram login code resent",
+                extra={"context": {
+                    "stage": "resend_code",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "phone_masked": self._mask_phone(item.phone),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                    "telegram_code_timeout_seconds": telegram_timeout,
+                    "telegram_code_type": sent_type,
+                    "telegram_next_code_type": next_type,
+                }},
+            )
+
     async def verify_code(self, owner_user_id: str, code: str) -> str:
         async with self._lock:
             item = await self._get_pending(owner_user_id)
