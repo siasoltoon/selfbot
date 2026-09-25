@@ -1,15 +1,16 @@
 """Secure multi-user Telegram account onboarding and runtime.
 
-The onboarding bot is separate from the user-account clients. Login codes and
-2FA passwords are accepted only in the transient onboarding flow and are never
-persisted or emitted to the application event bus. Long-lived Telethon sessions
-are encrypted at rest.
+The onboarding bot is separate from the user-account clients. QR login is the
+primary onboarding mechanism because Telegram/Telethon can invalidate a login
+code that is sent through the same application. 2FA passwords remain transient
+and are never persisted or emitted to the application event bus.
 """
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import inspect
+import io
 import re
 import time
 from dataclasses import dataclass
@@ -37,6 +38,10 @@ class AuthClient(Protocol):
     async def is_user_authorized(self) -> bool: ...
 
 
+class QRAuthClient(AuthClient, Protocol):
+    async def qr_login(self, ignored_ids: list[int] | None = None) -> Any: ...
+
+
 @dataclass(slots=True)
 class PendingLogin:
     owner_user_id: str
@@ -49,6 +54,16 @@ class PendingLogin:
     code_type: str | None = None
     next_code_type: str | None = None
     code_attempts: int = 0
+
+
+@dataclass(slots=True)
+class PendingQRLogin:
+    owner_user_id: str
+    client: QRAuthClient
+    qr_login: Any
+    expires_at: float
+    wait_task: asyncio.Task[Any] | None = None
+    two_fa_required: bool = False
 
 
 class TelegramSessionStore:
@@ -124,7 +139,7 @@ class TelegramSessionStore:
 
 
 class TelegramAuthenticationService:
-    """Interactive phone/code/2FA login with strictly transient credentials."""
+    """Transient Telegram authentication with QR login as the primary flow."""
 
     def __init__(
         self,
@@ -143,6 +158,7 @@ class TelegramAuthenticationService:
         self.client_factory = client_factory
         self.ttl_seconds = ttl_seconds
         self._pending: dict[str, PendingLogin] = {}
+        self._pending_qr: dict[str, PendingQRLogin] = {}
         self._lock = asyncio.Lock()
         self.logger = get_logger(__name__)
 
@@ -181,6 +197,17 @@ class TelegramAuthenticationService:
             raise ValidationError("phone must use international format, for example +989123456789")
         return value
 
+    @staticmethod
+    def _qr_png(url: str) -> bytes:
+        try:
+            import qrcode
+        except ImportError as exc:
+            raise DependencyError("qrcode is not installed", retryable=False) from exc
+        image = qrcode.make(url)
+        output = io.BytesIO()
+        image.save(output, format="PNG")
+        return output.getvalue()
+
     async def _cleanup_expired(self) -> None:
         now = time.monotonic()
         expired = [key for key, item in self._pending.items() if item.expires_at <= now]
@@ -209,7 +236,212 @@ class TelegramAuthenticationService:
                         }},
                     )
 
+        expired_qr = [key for key, item in self._pending_qr.items() if item.expires_at <= now]
+        for key in expired_qr:
+            item = self._pending_qr.pop(key, None)
+            if item:
+                if item.wait_task and not item.wait_task.done():
+                    item.wait_task.cancel()
+                try:
+                    await item.client.disconnect()
+                except Exception as exc:
+                    self.logger.warning(
+                        "telegram qr login client cleanup failed",
+                        extra={"context": {
+                            "stage": "cleanup_expired_qr_disconnect",
+                            "owner_fingerprint": self._owner_fingerprint(item.owner_user_id),
+                            "exception_type": type(exc).__name__,
+                            "exception_module": type(exc).__module__,
+                            "error_message": self._safe_exception_message(exc),
+                        }},
+                    )
+
+    async def begin_qr(self, owner_user_id: str) -> tuple[bytes, int]:
+        """Start a transient QR login and return PNG bytes plus TTL seconds."""
+        async with self._lock:
+            await self._cleanup_expired()
+            old = self._pending.pop(owner_user_id, None)
+            if old:
+                await old.client.disconnect()
+            old_qr = self._pending_qr.pop(owner_user_id, None)
+            if old_qr:
+                if old_qr.wait_task and not old_qr.wait_task.done():
+                    old_qr.wait_task.cancel()
+                await old_qr.client.disconnect()
+
+            client = self._new_client()
+            started = time.monotonic()
+            self.logger.info(
+                "telegram qr login started",
+                extra={"context": {
+                    "stage": "qr_begin",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "ttl_seconds": self.ttl_seconds,
+                }},
+            )
+            try:
+                await client.connect()
+                ignored_ids: list[int] = []
+                for record in self.store.list_connected():
+                    try:
+                        ignored_ids.append(int(record.telegram_account_id))
+                    except ValueError:
+                        continue
+                qr_login = await client.qr_login(ignored_ids=ignored_ids)
+                expires = getattr(qr_login, "expires", None)
+                if not isinstance(expires, datetime):
+                    raise DependencyError("Telegram did not return a QR expiry", retryable=True)
+                expires_utc = expires.astimezone(timezone.utc) if expires.tzinfo else expires.replace(tzinfo=timezone.utc)
+                ttl = max(1, min(self.ttl_seconds, int((expires_utc - datetime.now(timezone.utc)).total_seconds())))
+                item = PendingQRLogin(
+                    owner_user_id=owner_user_id,
+                    client=client,
+                    qr_login=qr_login,
+                    expires_at=time.monotonic() + ttl,
+                )
+                self._pending_qr[owner_user_id] = item
+                item.wait_task = asyncio.create_task(self._wait_for_qr(owner_user_id, item))
+                png = self._qr_png(str(qr_login.url))
+            except Exception as exc:
+                self.logger.error(
+                    "telegram qr login start failed",
+                    extra={"context": {
+                        "stage": "qr_begin",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc),
+                    }},
+                    exc_info=True,
+                )
+                failed_item = self._pending_qr.pop(owner_user_id, None)
+                if failed_item and failed_item.wait_task and not failed_item.wait_task.done():
+                    failed_item.wait_task.cancel()
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
+                raise
+            self.logger.info(
+                "telegram qr login challenge created",
+                extra={"context": {
+                    "stage": "qr_begin",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "elapsed_ms": round((time.monotonic() - started) * 1000),
+                    "qr_ttl_seconds": ttl,
+                }},
+            )
+            return png, ttl
+
+    async def _wait_for_qr(self, owner_user_id: str, item: PendingQRLogin) -> str:
+        timeout = max(1, item.expires_at - time.monotonic())
+        try:
+            await item.qr_login.wait(timeout=timeout)
+        except asyncio.TimeoutError:
+            self.logger.info(
+                "telegram qr login expired",
+                extra={"context": {
+                    "stage": "qr_wait",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "reason": "timeout",
+                }},
+            )
+            self._pending_qr.pop(owner_user_id, None)
+            await item.client.disconnect()
+            return "expired"
+        except Exception as exc:
+            if exc.__class__.__name__ == "SessionPasswordNeededError":
+                item.two_fa_required = True
+                self.logger.info(
+                    "telegram qr login accepted; 2fa required",
+                    extra={"context": {
+                        "stage": "qr_wait",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "exception_type": type(exc).__name__,
+                    }},
+                )
+                return "2fa_required"
+            self.logger.error(
+                "telegram qr login failed",
+                extra={"context": {
+                    "stage": "qr_wait",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "exception_type": type(exc).__name__,
+                    "exception_module": type(exc).__module__,
+                    "error_message": self._safe_exception_message(exc),
+                }},
+                exc_info=True,
+            )
+            self._pending_qr.pop(owner_user_id, None)
+            try:
+                await item.client.disconnect()
+            except Exception:
+                pass
+            return "failed"
+        try:
+            await self._finalize_client(owner_user_id, item.client)
+        except Exception as exc:
+            self.logger.error(
+                "telegram qr login finalization failed",
+                extra={"context": {
+                    "stage": "qr_finalize",
+                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                    "exception_type": type(exc).__name__,
+                    "exception_module": type(exc).__module__,
+                    "error_message": self._safe_exception_message(exc),
+                }},
+                exc_info=True,
+            )
+            self._pending_qr.pop(owner_user_id, None)
+            try:
+                await item.client.disconnect()
+            except Exception:
+                pass
+            return "failed"
+        self.logger.info(
+            "telegram qr login finalized successfully",
+            extra={"context": {
+                "stage": "qr_finalize",
+                "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+            }},
+        )
+        self._pending_qr.pop(owner_user_id, None)
+        return "connected"
+
+    async def verify_qr_2fa(self, owner_user_id: str, password: str) -> str:
+        if not password:
+            raise ValidationError("2FA password must not be empty")
+        async with self._lock:
+            await self._cleanup_expired()
+            item = self._pending_qr.get(owner_user_id)
+            if item is None or not item.two_fa_required:
+                raise NotFoundError("no Telegram QR login requires 2FA")
+            started = time.monotonic()
+            try:
+                await item.client.sign_in(password=password)
+                account_id = await self._finalize_client(owner_user_id, item.client)
+                self._pending_qr.pop(owner_user_id, None)
+            except Exception as exc:
+                self.logger.error(
+                    "telegram qr 2fa verification failed",
+                    extra={"context": {
+                        "stage": "qr_verify_2fa",
+                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
+                        "elapsed_ms": round((time.monotonic() - started) * 1000),
+                        "exception_type": type(exc).__name__,
+                        "exception_module": type(exc).__module__,
+                        "error_message": self._safe_exception_message(exc),
+                    }},
+                    exc_info=True,
+                )
+                raise
+            finally:
+                password = ""
+            return account_id
+
     async def begin(self, owner_user_id: str, phone: str) -> None:
+        """Legacy phone/code API retained for compatibility; onboarding no longer uses it."""
         phone = self._normalize_phone(phone)
         async with self._lock:
             await self._cleanup_expired()
@@ -287,13 +519,7 @@ class TelegramAuthenticationService:
             )
 
     async def resend_code(self, owner_user_id: str) -> None:
-        """Request a fresh code through Telegram's resend-code protocol.
-
-        The same transient client must be reused so Telethon can carry the
-        existing phone-code hash and invoke auth.resendCode. Creating a fresh
-        client here loses that protocol state and falls back to auth.sendCode,
-        which is a new authorization request rather than a true resend.
-        """
+        """Compatibility recovery for callers still using the legacy phone flow."""
         async with self._lock:
             item = await self._get_pending(owner_user_id)
             started = time.monotonic()
@@ -348,28 +574,8 @@ class TelegramAuthenticationService:
             item = await self._get_pending(owner_user_id)
             normalized_code = code.strip()
             if not re.fullmatch(r"\d{3,8}", normalized_code):
-                self.logger.warning(
-                    "telegram login code validation failed",
-                    extra={"context": {
-                        "stage": "verify_code_validation",
-                        "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                        "reason": "invalid_format",
-                    }},
-                )
                 raise ValidationError("Telegram login code must contain only digits")
             item.code_attempts += 1
-            started = time.monotonic()
-            self.logger.info(
-                "telegram login code verification started",
-                extra={"context": {
-                    "stage": "verify_code",
-                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                    "phone_masked": self._mask_phone(item.phone),
-                    "pending_age_seconds": round(max(0.0, time.monotonic() - item.code_requested_at), 3),
-                    "code_attempt": item.code_attempts,
-                    "telegram_code_timeout_seconds": item.code_timeout_seconds,
-                }},
-            )
             try:
                 await item.client.sign_in(
                     phone=item.phone,
@@ -378,16 +584,6 @@ class TelegramAuthenticationService:
                 )
             except Exception as exc:
                 if exc.__class__.__name__ == "SessionPasswordNeededError":
-                    self.logger.info(
-                        "telegram login code accepted; 2fa required",
-                        extra={"context": {
-                            "stage": "verify_code",
-                            "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                            "phone_masked": self._mask_phone(item.phone),
-                            "elapsed_ms": round((time.monotonic() - started) * 1000),
-                            "exception_type": type(exc).__name__,
-                        }},
-                    )
                     return "2fa_required"
                 self.logger.error(
                     "telegram login code verification failed",
@@ -395,7 +591,6 @@ class TelegramAuthenticationService:
                         "stage": "verify_code",
                         "owner_fingerprint": self._owner_fingerprint(owner_user_id),
                         "phone_masked": self._mask_phone(item.phone),
-                        "elapsed_ms": round((time.monotonic() - started) * 1000),
                         "exception_type": type(exc).__name__,
                         "exception_module": type(exc).__module__,
                         "error_message": self._safe_exception_message(exc, secrets=(normalized_code, item.phone)),
@@ -403,15 +598,6 @@ class TelegramAuthenticationService:
                     exc_info=True,
                 )
                 raise
-            self.logger.info(
-                "telegram login code accepted",
-                extra={"context": {
-                    "stage": "verify_code",
-                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                    "phone_masked": self._mask_phone(item.phone),
-                    "elapsed_ms": round((time.monotonic() - started) * 1000),
-                }},
-            )
             return await self._finalize(owner_user_id, item)
 
     async def verify_2fa(self, owner_user_id: str, password: str) -> str:
@@ -419,15 +605,6 @@ class TelegramAuthenticationService:
             raise ValidationError("2FA password must not be empty")
         async with self._lock:
             item = await self._get_pending(owner_user_id)
-            started = time.monotonic()
-            self.logger.info(
-                "telegram 2fa verification started",
-                extra={"context": {
-                    "stage": "verify_2fa",
-                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                    "phone_masked": self._mask_phone(item.phone),
-                }},
-            )
             try:
                 await item.client.sign_in(password=password)
             except Exception as exc:
@@ -437,7 +614,6 @@ class TelegramAuthenticationService:
                         "stage": "verify_2fa",
                         "owner_fingerprint": self._owner_fingerprint(owner_user_id),
                         "phone_masked": self._mask_phone(item.phone),
-                        "elapsed_ms": round((time.monotonic() - started) * 1000),
                         "exception_type": type(exc).__name__,
                         "exception_module": type(exc).__module__,
                         "error_message": self._safe_exception_message(exc),
@@ -446,17 +622,7 @@ class TelegramAuthenticationService:
                 )
                 raise
             finally:
-                # Never retain the password after this call returns.
                 password = ""
-            self.logger.info(
-                "telegram 2fa verification accepted",
-                extra={"context": {
-                    "stage": "verify_2fa",
-                    "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                    "phone_masked": self._mask_phone(item.phone),
-                    "elapsed_ms": round((time.monotonic() - started) * 1000),
-                }},
-            )
             return await self._finalize(owner_user_id, item)
 
     async def _get_pending(self, owner_user_id: str) -> PendingLogin:
@@ -466,24 +632,21 @@ class TelegramAuthenticationService:
             raise NotFoundError("no active Telegram login; start again")
         return item
 
-    async def _finalize(self, owner_user_id: str, item: PendingLogin) -> str:
-        started = time.monotonic()
-        self.logger.info(
-            "telegram login finalization started",
-            extra={"context": {
-                "stage": "finalize",
-                "owner_fingerprint": self._owner_fingerprint(owner_user_id),
-                "phone_masked": self._mask_phone(item.phone),
-            }},
-        )
-        me = await item.client.get_me()
+    async def _finalize_client(self, owner_user_id: str, client: AuthClient) -> str:
+        me = await client.get_me()
         account_id = str(getattr(me, "id", "") or "")
         if not account_id:
             raise DependencyError("Telegram login succeeded but account identity was unavailable", retryable=False)
-        session = item.client.session.save()
+        session = client.session.save()
         self.store.save(owner_user_id, account_id, session)
-        self._pending.pop(owner_user_id, None)
-        await item.client.disconnect()
+        await client.disconnect()
+        return account_id
+
+    async def _finalize(self, owner_user_id: str, item: PendingLogin) -> str:
+        try:
+            account_id = await self._finalize_client(owner_user_id, item.client)
+        finally:
+            self._pending.pop(owner_user_id, None)
         self.logger.info(
             "telegram login finalized successfully",
             extra={"context": {
@@ -491,7 +654,6 @@ class TelegramAuthenticationService:
                 "owner_fingerprint": self._owner_fingerprint(owner_user_id),
                 "phone_masked": self._mask_phone(item.phone),
                 "account_id": account_id,
-                "elapsed_ms": round((time.monotonic() - started) * 1000),
             }},
         )
         return account_id
@@ -501,11 +663,21 @@ class TelegramAuthenticationService:
             item = self._pending.pop(owner_user_id, None)
             if item:
                 await item.client.disconnect()
+            qr_item = self._pending_qr.pop(owner_user_id, None)
+            if qr_item:
+                if qr_item.wait_task and not qr_item.wait_task.done():
+                    qr_item.wait_task.cancel()
+                await qr_item.client.disconnect()
 
     async def cancel_all(self) -> None:
         async with self._lock:
             items, self._pending = self._pending, {}
             for item in items.values():
+                await item.client.disconnect()
+            qr_items, self._pending_qr = self._pending_qr, {}
+            for item in qr_items.values():
+                if item.wait_task and not item.wait_task.done():
+                    item.wait_task.cancel()
                 await item.client.disconnect()
 
 
@@ -615,6 +787,8 @@ class OnboardingBot:
         self._client: Any = None
         self._started = False
         self._states: dict[str, str] = {}
+        self._qr_messages: dict[str, Any] = {}
+        self._qr_watchers: dict[str, asyncio.Task[Any]] = {}
         self.logger = get_logger(__name__)
 
     async def start(self) -> None:
@@ -639,18 +813,74 @@ class OnboardingBot:
         self._started = True
         self.logger.info("Telegram onboarding bot started")
 
+    async def _watch_qr(self, user_id: str, event: Any) -> None:
+        try:
+            item = self.auth._pending_qr.get(user_id)
+            if item is None or item.wait_task is None:
+                return
+            result = await item.wait_task
+            qr_message = self._qr_messages.pop(user_id, None)
+            if qr_message is not None and hasattr(qr_message, "delete"):
+                try:
+                    await qr_message.delete()
+                except Exception:
+                    pass
+            if result == "connected":
+                self._states.pop(user_id, None)
+                await event.reply("اتصال با موفقیت انجام شد.")
+            elif result == "2fa_required":
+                self._states[user_id] = "qr_password"
+                await event.reply("QR تأیید شد. رمز دومرحله‌ای تلگرام را بفرست. رمز ذخیره یا لاگ نمی‌شود.")
+            elif result == "expired":
+                self._states.pop(user_id, None)
+                await event.reply("QR منقضی شد. دوباره /connect را بزن.")
+            else:
+                self._states.pop(user_id, None)
+                await event.reply("ورود با QR ناموفق بود. دوباره /connect را بزن.")
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            self.logger.error(
+                "telegram onboarding qr watcher failed",
+                extra={"context": {
+                    "stage": "qr_watcher",
+                    "owner_fingerprint": self.auth._owner_fingerprint(user_id),
+                    "exception_type": type(exc).__name__,
+                    "exception_module": type(exc).__module__,
+                    "error_message": self.auth._safe_exception_message(exc),
+                }},
+                exc_info=True,
+            )
+            self._states.pop(user_id, None)
+            await event.reply("پردازش QR ناموفق شد. دوباره /connect را بزن.")
+        finally:
+            self._qr_watchers.pop(user_id, None)
+
     async def _handle(self, user_id: str, event: Any, text: str) -> None:
         lower = text.lower()
         if lower in {"/start", "/help"}:
             await event.reply(
                 "سلام. برای اتصال سلف‌بات از /connect استفاده کن.\n"
-                "در مراحل بعد شماره، کد ورود تلگرام و در صورت فعال بودن، رمز دومرحله‌ای را می‌گیریم.\n"
-                "کد و رمز ذخیره یا در لاگ ثبت نمی‌شوند."
+                "ورود با QR انجام می‌شود و دیگر کد ورود تلگرام را داخل این چت نمی‌گیریم.\n"
+                "QR را باید با یک دستگاه دیگری که قبلاً به همان اکانت تلگرام وارد شده اسکن کنی.\n"
+                "در صورت فعال بودن، فقط رمز دومرحله‌ای به‌صورت موقت دریافت می‌شود."
             )
             return
         if lower == "/connect":
-            self._states[user_id] = "phone"
-            await event.reply("شماره اکانت تلگرام را با فرمت بین‌المللی بفرست؛ مثال: +989123456789")
+            self._states[user_id] = "qr"
+            try:
+                png, ttl = await self.auth.begin_qr(user_id)
+                sent = await event.reply(
+                    f"QR ورود تلگرام آماده است. آن را با دستگاه دیگری که به همان اکانت وارد است اسکن کن.\n"
+                    f"این QR حدود {ttl} ثانیه اعتبار دارد؛ آن را فوروارد یا ذخیره نکن.",
+                    file=io.BytesIO(png),
+                )
+                self._qr_messages[user_id] = sent
+                watcher = asyncio.create_task(self._watch_qr(user_id, event))
+                self._qr_watchers[user_id] = watcher
+            except Exception:
+                self._states.pop(user_id, None)
+                await event.reply("ساخت QR ورود ناموفق بود. چند لحظه بعد دوباره /connect را بزن.")
             return
         if lower == "/status":
             try:
@@ -661,62 +891,36 @@ class OnboardingBot:
                 await event.reply(f"اکانت متصل است. شناسه داخلی تلگرام: {record.telegram_account_id}")
             return
         if lower == "/disconnect":
+            watcher = self._qr_watchers.pop(user_id, None)
+            if watcher and not watcher.done():
+                watcher.cancel()
             await self.auth.cancel(user_id)
             count = self.store.revoke(user_id)
             self._states.pop(user_id, None)
             await event.reply("اتصال لغو شد." if count == 0 else "اتصال اکانت قطع شد. برای اتصال دوباره /connect را بزن.")
             return
-
-        state = self._states.get(user_id)
-        if state == "phone":
+        if self._states.get(user_id) == "qr_password":
             try:
-                await self.auth.begin(user_id, text)
-            except Exception:
-                await event.reply("شماره معتبر نیست یا شروع ورود ناموفق بود. دوباره /connect را بزن.")
-                return
-            self._states[user_id] = "code"
-            await event.reply("کد ورود تلگرام را بفرست. این کد ذخیره نمی‌شود.")
-            return
-        if state == "code":
-            if lower == "/resend":
-                try:
-                    await self.auth.resend_code(user_id)
-                except Exception:
-                    await event.reply("ارسال مجدد کد ناموفق بود. چند لحظه صبر کن و دوباره /resend را بزن.")
-                    return
-                await event.reply("کد جدید ارسال شد. فقط آخرین کد دریافتی را وارد کن.")
-                return
-            try:
-                result = await self.auth.verify_code(user_id, text)
-            except Exception as exc:
-                if exc.__class__.__name__ == "PhoneCodeExpiredError":
-                    await event.reply("کد منقضی شده است. برای دریافت کد جدید /resend را بزن.")
-                    return
-                if exc.__class__.__name__ == "PhoneCodeInvalidError":
-                    await event.reply("کد نادرست است. همان آخرین کدی را که تلگرام فرستاده وارد کن؛ برای کد جدید /resend را بزن.")
-                    return
-                await event.reply("ورود با کد ناموفق بود. /connect را دوباره اجرا کن.")
-                self._states.pop(user_id, None)
-                return
-            if result == "2fa_required":
-                self._states[user_id] = "password"
-                await event.reply("رمز دومرحله‌ای تلگرام را بفرست. رمز ذخیره یا لاگ نمی‌شود.")
-                return
-            self._states.pop(user_id, None)
-            await event.reply("اتصال با موفقیت انجام شد.")
-            return
-        if state == "password":
-            try:
-                await self.auth.verify_2fa(user_id, text)
+                account_id = await self.auth.verify_qr_2fa(user_id, text)
             except Exception:
                 await event.reply("رمز دومرحله‌ای نامعتبر است یا ورود کامل نشد. /connect را دوباره اجرا کن.")
                 self._states.pop(user_id, None)
                 return
             self._states.pop(user_id, None)
-            await event.reply("اتصال با موفقیت انجام شد.")
+            await event.reply(f"اتصال با موفقیت انجام شد. شناسه داخلی تلگرام: {account_id}")
+            return
+        if self._states.get(user_id) == "qr":
+            if lower == "/resend":
+                await event.reply("در روش QR نیازی به /resend نیست؛ اگر QR منقضی شد /connect را دوباره بزن.")
+            else:
+                await event.reply("QR در حال انتظار برای اسکن است. آن را با یک دستگاه دیگر اسکن کن یا /connect را دوباره بزن.")
             return
 
     async def stop(self) -> None:
+        for task in self._qr_watchers.values():
+            if not task.done():
+                task.cancel()
+        self._qr_watchers.clear()
         await self.auth.cancel_all()
         if self._client is not None:
             result = self._client.disconnect()

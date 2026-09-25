@@ -1,15 +1,21 @@
 # Task State
 
 ## Active Task
-Diagnose and complete the first real multi-user Telegram onboarding verification.
+Complete the first real multi-user Telegram onboarding verification using QR login.
 
 ## Status
-IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery hardening is implemented and CI-verified; successful external onboarding is still pending.
+IN PROGRESS — repeated `PhoneCodeExpiredError` proved the code-in-chat flow unsuitable; QR onboarding is implemented and CI-verified, and successful external QR onboarding is still pending.
 
 ## Latest Verified Implementation
 - PR #14 implements multi-user onboarding and independent account runtime.
 - PR #15 adds secure authentication lifecycle/error diagnostics.
 - CI 36182724874 passed on Python 3.11 and 3.12.
+
+## Latest QR Change
+- PR #18 adds Telethon QR login as the production onboarding path.
+- The onboarding bot sends a transient QR image, keeps the QR wait active before scanning, supports QR-triggered 2FA, deletes QR media after the challenge resolves, and persists the encrypted StringSession.
+- Legacy phone/code methods remain only for compatibility and are no longer exposed by the onboarding bot.
+- CI 36186445250 passed on Python 3.11 and 3.12.
 
 ## Latest Recovery Change
 - Telegram `PhoneCodeExpiredError` no longer forces the user to restart the whole flow.
@@ -24,10 +30,10 @@ IN PROGRESS — Telegram runtime exposed `PhoneCodeExpiredError`; recovery harde
 - Regression coverage verifies that sensitive test values are excluded from authentication error logs.
 
 ## Remaining Operator/Environment Work
-1. PR #17 resend-protocol correction is merged and CI-verified.
-2. Repeat real Telegram `/connect` flow against the merged main branch and capture sanitized runtime result.
-3. If authentication still fails, identify the exact Telegram exception before making another targeted change.
-3. Verify successful session persistence and linked-account message routing.
+1. Merge PR #18 after the green CI evidence.
+2. Run real Telegram `/connect` using QR and another already-authorized Telegram device.
+3. If QR authentication fails, capture the exact sanitized Telegram exception before making another targeted change.
+4. Verify encrypted session persistence and linked-account message routing.
 4. Continue the broader external verification matrix: providers, worker, OCR, DB, backup/restore, deployment, performance and security.
 
 ## Rule

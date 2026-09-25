@@ -58,3 +58,13 @@ Only environment-dependent verification remains before final release: real Teleg
 - The fresh-client resend approach was therefore not sufficient. PR #17 changed `/resend` to reuse the existing Telethon client and preserve its internal phone-code hash so Telethon can invoke the official resend-code protocol.
 - PR #17 CI run 36185340785 passed on Python 3.11 and 3.12.
 - Real Telegram onboarding remains unverified until the merged implementation succeeds externally.
+
+
+## 2026-09-25 — QR-first Telegram onboarding
+- Replaced the production onboarding bot's phone/code chat interaction with Telethon QR login.
+- Added in-memory QR PNG generation and short-lived challenge lifecycle management.
+- Added background QR waiting, optional 2FA continuation, encrypted StringSession persistence, cancellation and cleanup.
+- QR challenge media is removed from the onboarding chat after completion/expiry/failure; QR URLs/tokens are not logged.
+- Added `qrcode[pil]` and QR lifecycle regression tests.
+- PR #18 CI run 36186445250 passed on Python 3.11 and 3.12.
+- Real Telegram QR onboarding remains operator-dependent.

@@ -26,3 +26,9 @@ Core logic remains deployment-neutral. Railway/VPS/personal-PC behavior belongs 
 Installation Bot → Authentication Service → encrypted Session Store → Multi-user Telegram Runtime → Event Router → Core Services.
 
 The installation bot is a normal Telegram bot account. Each connected user's selfbot account is an independent Telethon client. Persistent account sessions are encrypted at rest; transient login code/2FA input is not persisted or dispatched to the core event bus.
+
+
+## Telegram authentication path — current
+Installation Bot → QR Authentication Service → transient QR challenge → optional transient 2FA → encrypted Session Store → Multi-user Telegram Runtime → Event Router.
+
+The production onboarding bot does not collect Telegram login codes in chat. QR tokens are rendered as short-lived PNG media, the QR wait runs concurrently before scanning, and QR media/transient client state is cleaned up after completion, expiry, cancellation, or failure. Legacy phone/code methods remain isolated for compatibility and are not reachable from the production onboarding interaction.
