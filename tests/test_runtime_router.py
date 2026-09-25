@@ -21,7 +21,7 @@ async def test_owner_ping_is_routed():
     router = TelegramRuntimeRouter(telegram, "42")
     router.start()
 
-    await telegram.events.dispatch(
+    asyncio.run(telegram.events.dispatch(
         EventEnvelope(
             event_type="telegram.new_message",
             source="telegram",
@@ -40,7 +40,7 @@ async def test_non_owner_command_is_ignored():
     router = TelegramRuntimeRouter(telegram, "42")
     router.start()
 
-    await telegram.events.dispatch(
+    asyncio.run(telegram.events.dispatch(
         EventEnvelope(
             event_type="telegram.new_message",
             source="telegram",
