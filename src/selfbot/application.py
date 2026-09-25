@@ -1,10 +1,7 @@
 """Application lifecycle orchestration."""
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import StrEnum
-
 from .bootstrap import Runtime
 from .errors import ConfigurationError, classify_error
 from .logging import get_logger
@@ -12,6 +9,7 @@ from .runtime_router import TelegramRuntimeRouter
 from .telegram import TelegramAdapter
 from .multi_user_security import SessionCipher
 from .multi_user_telegram import MultiUserTelegramRuntime, OnboardingBot, TelegramAuthenticationService, TelegramSessionStore
+from .panel_security import PanelTokenSigner
 
 
 class ApplicationState(StrEnum):
@@ -29,6 +27,7 @@ class Application:
     telegram: TelegramAdapter | MultiUserTelegramRuntime
     router: TelegramRuntimeRouter
     onboarding: OnboardingBot | None = None
+    panel_signer: PanelTokenSigner | None = None
     state: ApplicationState = ApplicationState.CREATED
 
     async def start(self) -> None:
@@ -40,7 +39,17 @@ class Application:
         try:
             if self.onboarding is not None:
                 await self.onboarding.start()
-                await self.telegram.start(self.runtime.settings.telegram_api_id or "", self.runtime.settings.telegram_api_hash or "")
+                if isinstance(self.telegram, MultiUserTelegramRuntime):
+                    if not self.onboarding.username:
+                        raise ConfigurationError("Telegram onboarding bot username is unavailable")
+                    signer = self.panel_signer
+                    if signer is None:
+                        raise ConfigurationError("panel signer is unavailable")
+                    self.telegram.configure_panel(self.onboarding.username, signer.issue)
+                await self.telegram.start(
+                    self.runtime.settings.telegram_api_id or "",
+                    self.runtime.settings.telegram_api_hash or "",
+                )
             else:
                 await self.telegram.start()
             self.router.start()
@@ -78,11 +87,30 @@ def create_application(runtime: Runtime) -> Application:
         if not runtime.settings.telegram_api_id or not runtime.settings.telegram_api_hash:
             raise ConfigurationError("Telegram API credentials are required for multi-user mode")
         store = TelegramSessionStore(runtime.database, SessionCipher(runtime.settings.telegram_session_encryption_key))
+        signer = PanelTokenSigner(runtime.settings.telegram_session_encryption_key)
         auth = TelegramAuthenticationService(runtime.settings.telegram_api_id, runtime.settings.telegram_api_hash, store)
         telegram = MultiUserTelegramRuntime(store, runtime.services.events)
-        onboarding = OnboardingBot(runtime.settings.telegram_onboarding_bot_token, runtime.settings.telegram_api_id, runtime.settings.telegram_api_hash, auth, store)
-        router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True)
-        return Application(runtime=runtime, telegram=telegram, router=router, onboarding=onboarding)
+        onboarding = OnboardingBot(
+            runtime.settings.telegram_onboarding_bot_token,
+            runtime.settings.telegram_api_id,
+            runtime.settings.telegram_api_hash,
+            auth,
+            store,
+            runtime.services.capabilities,
+            signer.issue,
+        )
+        onboarding.configure_panel_security(signer.issue, signer.verify)
+        router = TelegramRuntimeRouter(
+            telegram,
+            None,
+            allow_linked_accounts=True,
+            services=runtime.services,
+        )
+        return Application(runtime=runtime, telegram=telegram, router=router, onboarding=onboarding, panel_signer=signer)
     telegram = TelegramAdapter(runtime.settings, runtime.services.events)
-    router = TelegramRuntimeRouter(telegram, runtime.settings.owner_id)
+    router = TelegramRuntimeRouter(
+        telegram,
+        runtime.settings.owner_id,
+        services=runtime.services,
+    )
     return Application(runtime=runtime, telegram=telegram, router=router)

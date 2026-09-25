@@ -741,6 +741,8 @@ class MultiUserTelegramRuntime:
         self.events = events
         self.client_factory = client_factory
         self._clients: dict[str, Any] = {}
+        self._panel_bot_username: str | None = None
+        self._panel_token_factory: Callable[[str], str] | None = None
 
     def _new_client(self, session: str, api_id: int, api_hash: str) -> Any:
         if self.client_factory:
@@ -790,9 +792,41 @@ class MultiUserTelegramRuntime:
                     "message_id": str(getattr(message, "id", "") or ""),
                     "text": getattr(message, "message", None),
                     "telegram_account_id": account_id,
+                    "outgoing": bool(getattr(message, "out", False)),
                 },
             ))
         return handler
+
+    async def open_panel(self, chat_id: str | int, *, owner_id: str, account_id: str | None = None) -> Any:
+        if not account_id:
+            raise ValidationError("telegram account id is required for panel")
+        client = self._clients.get(account_id)
+        if client is None:
+            raise NotFoundError("Telegram account runtime is not active")
+        bot_username = getattr(self, "_panel_bot_username", None)
+        if not bot_username:
+            raise DependencyError("panel inline bot is not configured", retryable=False)
+        try:
+            from telethon import errors as telethon_errors
+        except ImportError as exc:
+            raise DependencyError("Telethon is not installed", retryable=False) from exc
+        token_factory = getattr(self, "_panel_token_factory", None)
+        if token_factory is None:
+            raise DependencyError("panel token service is not configured", retryable=False)
+        query = f"panel:{token_factory(owner_id)}"
+        try:
+            results = await client.inline_query(bot_username, query, entity=chat_id)
+        except telethon_errors.TelegramBaseError as exc:
+            raise DependencyError("panel inline query failed", retryable=True) from exc
+        if not results:
+            raise DependencyError("panel inline bot returned no result", retryable=True)
+        return await results[0].click(entity=chat_id)
+
+    def configure_panel(self, bot_username: str, token_factory: Callable[[str], str]) -> None:
+        if not bot_username.strip():
+            raise ValidationError("panel bot username is required")
+        self._panel_bot_username = bot_username.lstrip("@")
+        self._panel_token_factory = token_factory
 
     async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None) -> Any:
         if not account_id:
@@ -822,6 +856,8 @@ class OnboardingBot:
         api_hash: str,
         auth: TelegramAuthenticationService,
         store: TelegramSessionStore,
+        capabilities: Any | None = None,
+        panel_token_factory: Callable[[str], str] | None = None,
     ) -> None:
         if not token.strip():
             raise ConfigurationError("TELEGRAM_ONBOARDING_BOT_TOKEN is required")
@@ -830,7 +866,10 @@ class OnboardingBot:
         self.api_hash = api_hash
         self.auth = auth
         self.store = store
+        self.capabilities = capabilities
+        self.panel_token_factory = panel_token_factory
         self._client: Any = None
+        self.username: str | None = None
         self._started = False
         self._states: dict[str, str] = {}
         self._qr_messages: dict[str, Any] = {}
@@ -846,6 +885,8 @@ class OnboardingBot:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
         self._client = TelegramClient(None, self.api_id, self.api_hash)
         await self._client.start(bot_token=self.token)
+        me = await self._client.get_me()
+        self.username = getattr(me, "username", None)
 
         @self._client.on(events.NewMessage(incoming=True))
         async def on_message(event: Any) -> None:
@@ -856,8 +897,118 @@ class OnboardingBot:
             text = (getattr(event, "raw_text", "") or "").strip()
             await self._handle(user_id, event, text)
 
+        @self._client.on(events.InlineQuery)
+        async def on_inline_query(event: Any) -> None:
+            if self.capabilities is None or self.panel_token_factory is None:
+                await event.answer([], cache_time=0)
+                return
+            token = (getattr(event, "text", "") or "").strip()
+            if not token.startswith("panel:"):
+                await event.answer([], cache_time=0)
+                return
+            owner_id = self._verify_panel_token(token[6:])
+            if owner_id is None:
+                await event.answer([], cache_time=0)
+                return
+            try:
+                record = self.store.get_connected(owner_id)
+                text, buttons = self._panel_view(owner_id)
+                result = await event.builder.article(
+                    "🤖 Selfbot Panel",
+                    text=text,
+                    buttons=buttons,
+                )
+                await event.answer([result], cache_time=0, private=True)
+                self.logger.info(
+                    "telegram capability panel served",
+                    extra={"context": {"owner_fingerprint": self.auth._owner_fingerprint(owner_id)}},
+                )
+                _ = record
+            except Exception as exc:
+                self.logger.warning(
+                    "telegram capability panel failed",
+                    extra={"context": {
+                        "stage": "inline_panel",
+                        "exception_type": type(exc).__name__,
+                        "error_message": self.auth._safe_exception_message(exc),
+                    }},
+                )
+                await event.answer([], cache_time=0)
+
+        @self._client.on(events.CallbackQuery)
+        async def on_callback(event: Any) -> None:
+            data = bytes(getattr(event, "data", b"") or b"").decode("utf-8", "ignore")
+            if not data.startswith("panel|"):
+                return
+            parts = data.split("|", 2)
+            if len(parts) != 3:
+                await event.answer("درخواست نامعتبر است.", alert=True)
+                return
+            owner_id = self._verify_panel_token(parts[1])
+            if owner_id is None:
+                await event.answer("نشست پنل معتبر نیست.", alert=True)
+                return
+            sender = str(getattr(event, "sender_id", "") or "")
+            if sender != owner_id:
+                await event.answer("این پنل متعلق به شما نیست.", alert=True)
+                return
+            capability_id = parts[2]
+            try:
+                current = self.capabilities.is_enabled(owner_id, capability_id)
+                self.capabilities.set_enabled(owner_id, capability_id, not current)
+                text, buttons = self._panel_view(owner_id)
+                await event.edit(text, buttons=buttons)
+                await event.answer("تغییر ذخیره شد.")
+            except Exception as exc:
+                await event.answer(f"تغییر انجام نشد: {type(exc).__name__}", alert=True)
+
         self._started = True
         self.logger.info("Telegram onboarding bot started")
+
+    def _verify_panel_token(self, token: str) -> str | None:
+        if self.panel_token_factory is None:
+            return None
+        # The factory is intentionally one-way; verification is supplied by the
+        # paired signer through a dedicated attribute when configured.
+        verifier = getattr(self, "_panel_token_verifier", None)
+        return verifier(token) if verifier is not None else None
+
+    def configure_panel_security(
+        self,
+        token_factory: Callable[[str], str],
+        token_verifier: Callable[[str], str | None],
+    ) -> None:
+        self.panel_token_factory = token_factory
+        self._panel_token_verifier = token_verifier
+
+    def _panel_view(self, owner_id: str) -> tuple[str, list[list[Any]]]:
+        from telethon import Button
+        snapshot = self.capabilities.snapshot(owner_id)
+        lines = [
+            "🤖 پنل مدیریت Selfbot",
+            "",
+            "🟢 روشن | ⚪ خاموش",
+            "با هر دکمه وضعیت همان قابلیت فوراً در دیتابیس ذخیره می‌شود.",
+            "",
+        ]
+        buttons = []
+        token = self.panel_token_factory(owner_id)
+        row = []
+        for item in self.capabilities.definitions():
+            enabled = snapshot[item.capability_id]
+            marker = "🟢" if enabled else "⚪"
+            lines.append(f"{marker} {item.title}: {item.description}")
+            if item.toggleable:
+                row.append(Button.inline(
+                    f"{marker} {item.title}",
+                    f"panel|{token}|{item.capability_id}",
+                ))
+                if len(row) == 2:
+                    buttons.append(row)
+                    row = []
+        if row:
+            buttons.append(row)
+        return "\n".join(lines), buttons
 
     async def _watch_qr(self, user_id: str, event: Any) -> None:
         try:
