@@ -20,6 +20,12 @@
 - Do not rely on GitHub-hosted runner local SQLite for durable multi-user sessions; persistent PostgreSQL is the intended runtime store.
 - Keep the legacy single-session adapter available for compatibility while multi-user mode is enabled by onboarding token + session encryption key.
 
+## Decision: Telegram authentication code recovery
+- Treat `PhoneCodeExpiredError` and `PhoneCodeInvalidError` as recoverable interaction errors while the transient login remains valid.
+- Preserve the pending flow rather than forcing a complete `/connect` restart.
+- Explicit `/resend` uses a fresh transient Telethon client so a stale internal phone-code hash cannot be reused accidentally.
+- Never automatically loop/resend codes on failure; Telegram-side rate limits remain authoritative.
+
 ## Decision: Telegram authentication diagnostics
 - Authentication failures must expose enough structured runtime evidence to identify the Telegram exception and failing stage without exposing authentication secrets.
 - Log masked phone numbers and hashed owner identifiers rather than raw personal/account identifiers.
