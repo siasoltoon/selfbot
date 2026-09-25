@@ -42,3 +42,8 @@ The production onboarding bot does not collect Telegram login codes in chat. QR 
 - The current implementation extends the pending session's cleanup deadline to the configured authentication-service TTL at the 2FA boundary.
 - This prevents the QR token's expiry from disconnecting the client while the user enters the 2FA password.
 - A future cleanup may split `qr_expires_at` and `two_fa_expires_at` into distinct fields if additional lifecycle states require it.
+
+### Post-auth persistence safety
+- Production QR clients use Telethon `StringSession()` from the beginning so successful authentication can yield a durable session string.
+- Durable session persistence is part of the authentication transaction boundary: a successful Telegram authentication is not reported as an application-level success until the encrypted session is stored.
+- If persistence fails after authentication, the transient authenticated client attempts `log_out()` before disconnecting, preventing an unmanaged authenticated session from being retained.
