@@ -32,3 +32,22 @@ IN PROGRESS — the first successful real QR + 2FA onboarding has now completed 
 
 ## Rule
 Do not fabricate PASS for environment-dependent checks. Any failure discovered there becomes a new targeted engineering task.
+
+## Completed Task — Global Telegram Capability Panel
+- Implemented and merged PR #23 as 68203f444ceae87159ecee813908c683297039ff.
+- /panel and /پنل are recognized from outgoing linked-account messages.
+- The same panel path supports Saved Messages, private chats and groups through the onboarding bot's Inline Mode.
+- Capability state is durable and owner-scoped; callbacks are authenticated and owner-checked.
+- The panel exposes the master-spec capability set and keeps security/tasks always enabled.
+- /capability <id> on|off provides a text control fallback.
+- CI c74a5a8194931a24807d35da19375346a92d610c passed on Python 3.11/3.12.
+
+## Next Task
+1. Enable Inline Mode for the onboarding bot via BotFather /setinline.
+2. Restart the current runtime with the merged main commit.
+3. Send /پنل in Saved Messages and verify the inline panel is inserted into Saved Messages.
+4. Toggle at least one capability on and off and verify the message updates and state persists.
+5. Repeat /پنل in a private chat and a group.
+6. Verify an incoming group member cannot trigger capability control.
+7. Continue session-reuse and broader production verification.
+

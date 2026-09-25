@@ -51,3 +51,13 @@
 - Treat encrypted durable session persistence as part of the application-level authentication transaction.
 - If Telegram authentication succeeds but persistence fails, attempt `log_out()` before disconnecting the authenticated client; never silently leave an authenticated session unmanaged.
 - Distinguish invalid 2FA credentials from infrastructure/persistence failures in user-facing onboarding responses.
+
+## Decision: Global Telegram capability panel
+- Use /panel and /پنل on the linked user account rather than restricting the panel to the onboarding bot's private chat.
+- Accept outgoing commands only for control actions; incoming group messages cannot control the owner account.
+- Use the onboarding bot's Inline Mode to deliver the interactive panel into the exact originating chat, including Saved Messages. This is necessary because Telethon callback buttons are bot-side interactions.
+- Authenticate panel ownership with an HMAC-derived compact token and verify the callback sender before changing state.
+- Reuse the existing encrypted-session secret as the signing secret; no new secret is introduced.
+- Persist capability settings through DomainStore/domain_state rather than adding a duplicate settings table.
+- Separate capability enabled state from dependency availability. A toggle never creates a fake provider/worker result.
+- Security and task/scheduler remain always enabled to preserve recovery and core safety controls.

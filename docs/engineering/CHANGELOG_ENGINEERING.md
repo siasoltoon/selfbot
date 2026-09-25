@@ -76,3 +76,14 @@ Only environment-dependent verification remains before final release: real Teleg
 - PR #21 first CI run 36188334722 failed due to a regression-test expectation mismatch; corrected test then passed in CI run 36188868237 on Python 3.11/3.12.
 - PR #21 merged to `main` as `df5b27344bcc498d252c4e5786119ca0702fa1fc`.
 - Fresh real QR+2FA onboarding against current `main` is now the next operator verification step.
+
+## 2026-09-25 — Global Telegram Capability Panel
+- Added CapabilityService with owner-scoped durable feature gates.
+- Added the master-spec capability registry covering AI, memory, voice, web, plugins, worker, automation, reminders, backup/restore, analytics, learning, multi-agent AI and OCR.
+- Added /panel and /پنل handling for outgoing linked-account messages.
+- Added Saved Messages/private/group panel delivery through the onboarding bot's Inline Mode.
+- Added HMAC-authenticated panel tokens and callback owner verification.
+- Added text capability control fallback.
+- Added panel setup documentation in docs/TELEGRAM_GLOBAL_PANEL.md.
+- PR #23 merged to main as 68203f444ceae87159ecee813908c683297039ff.
+- Final feature CI c74a5a8194931a24807d35da19375346a92d610c passed on Python 3.11/3.12.

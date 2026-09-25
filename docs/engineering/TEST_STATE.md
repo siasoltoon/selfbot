@@ -54,3 +54,11 @@
 - final security/dependency audit
 
 A phase remains non-final until its required evidence is recorded.
+
+## Global Capability Panel — 2026-09-25
+- PR #23 final feature head c74a5a8194931a24807d35da19375346a92d610c: PASS.
+- Python 3.11: compileall + pytest PASS.
+- Python 3.12: compileall + pytest PASS.
+- Regression tests added: tests/test_capability_panel.py and tests/test_runtime_panel.py.
+- Coverage includes durable per-owner capability settings, authenticated compact panel tokens, outgoing /پنل routing from multiple chat types, and incoming-command rejection.
+- Real Telegram Inline Mode/button interaction is NOT yet claimed PASS; it requires operator-side BotFather configuration and runtime verification.

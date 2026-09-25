@@ -53,3 +53,15 @@ The repository does not claim production release merely from framework/unit/CI e
 3. Verify session reuse after a controlled application restart without repeating QR authentication.
 4. Continue the broader external verification matrix: real database, providers, worker, OCR, backup/restore, deployment, performance and security.
 Do not mark the entire project release PASS until those evidence items are completed.
+
+## 2026-09-25 — Global Telegram Capability Panel
+- PR #23 merged to main as 68203f444ceae87159ecee813908c683297039ff.
+- Added durable owner-scoped capability state backed by the existing domain_state store.
+- Added the full master-spec capability registry: AI, long-term memory, voice, web intelligence, plugins, PC Worker, automation, reminders, backup/restore, analytics, controlled learning, multi-agent AI, OCR, plus always-on tasks/scheduler and security.
+- Added /panel and /پنل handling for outgoing linked-account commands.
+- Panel requests can originate from Saved Messages, private chats and groups; the linked user account invokes the onboarding bot through Telegram Inline Mode so interactive controls can be inserted into the same chat.
+- Added signed panel tokens, callback sender verification and owner-scoped durable toggles.
+- Added /capability <id> on|off as a text fallback/control path.
+- CI for the final feature head c74a5a8194931a24807d35da19375346a92d610c passed on Python 3.11 and 3.12.
+- One-time operator setup remains: enable Inline Mode for the onboarding bot with BotFather /setinline.
+- Capability enabled state is distinct from external provider/worker availability; unavailable dependencies must still fail safely.

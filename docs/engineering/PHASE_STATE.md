@@ -61,3 +61,10 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 ## Runtime Deployment Gate
 - GitHub Actions Windows runtime workflow implemented.
 - Real Telegram startup/message-flow verification remains operator-dependent.
+
+## Telegram Global Capability Panel — 2026-09-25
+- Implementation: COMPLETE for the code-side panel unit.
+- PR #23: merged as 68203f444ceae87159ecee813908c683297039ff.
+- CI final feature head c74a5a8194931a24807d35da19375346a92d610c: PASS on Python 3.11/3.12.
+- Tests cover durable owner-scoped capability state, fail-closed gates, authenticated panel tokens, outgoing /پنل routing in Saved Messages/groups, and rejection of incoming group control messages.
+- External verification remains for Telegram Inline Mode setup and real interactive button toggles.

@@ -47,3 +47,19 @@ The production onboarding bot does not collect Telegram login codes in chat. QR 
 - Production QR clients use Telethon `StringSession()` from the beginning so successful authentication can yield a durable session string.
 - Durable session persistence is part of the authentication transaction boundary: a successful Telegram authentication is not reported as an application-level success until the encrypted session is stored.
 - If persistence fails after authentication, the transient authenticated client attempts `log_out()` before disconnecting, preventing an unmanaged authenticated session from being retained.
+
+## Global Telegram Capability Panel
+Linked user account outgoing message
+-> EventEnvelope (telegram.new_message, outgoing=true)
+-> TelegramRuntimeRouter
+-> MultiUserTelegramRuntime.open_panel()
+-> onboarding bot InlineQuery
+-> signed panel token verification
+-> CapabilityService / DomainStore
+-> inline callback
+-> owner verification
+-> durable capability toggle
+
+The linked-account runtime deliberately ignores incoming group commands for control operations. This prevents other group members from controlling the owner's selfbot. The onboarding bot owns inline callbacks because Telegram/Telethon callback buttons are bot-side interactions; the linked user account only requests and sends the inline result into the target chat.
+
+Capability state is persisted per onboarding owner in the existing domain_state table, avoiding a duplicate settings database. Security and task/scheduler are core protections and are not user-disableable.
