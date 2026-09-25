@@ -21,6 +21,13 @@ class TelegramRuntimeRouter:
     def start(self) -> None:
         self.telegram.events.subscribe("telegram.new_message", self._handle_message)
 
+    async def _send(self, event, text: str) -> None:
+        account_id = event.payload.get("telegram_account_id")
+        if account_id:
+            await self.telegram.send_message(event.chat_id or event.actor_id, text, account_id=account_id)
+        else:
+            await self.telegram.send_message(event.chat_id or event.actor_id, text)
+
     async def _handle_message(self, event) -> None:
         if self.owner_id:
             if event.actor_id != self.owner_id:
@@ -34,16 +41,8 @@ class TelegramRuntimeRouter:
 
         command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
         if command == "/ping":
-            await self.telegram.send_message(event.chat_id or event.actor_id, "pong", account_id=event.payload.get("telegram_account_id"))
+            await self._send(event, "pong")
         elif command == "/status":
-            await self.telegram.send_message(
-                event.chat_id or event.actor_id,
-                "Selfbot is running.",
-                account_id=event.payload.get("telegram_account_id"),
-            )
+            await self._send(event, "Selfbot is running.")
         elif command == "/help":
-            await self.telegram.send_message(
-                event.chat_id or event.actor_id,
-                "دستورات فعال:\n/ping\n/status\n/help",
-                account_id=event.payload.get("telegram_account_id"),
-            )
+            await self._send(event, "دستورات فعال:\n/ping\n/status\n/help")
