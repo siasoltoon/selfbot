@@ -19,5 +19,13 @@
 ## Final External Verification Gate
 The repository does not claim production release merely from framework/unit/CI evidence. Remaining work requires real credentials, real Telegram/provider behavior, labeled OCR data, real worker transport, deployed environments, backup/restore, performance/load and rollback/recovery evidence.
 
+## Latest Runtime Integration
+- Added deployment-agnostic `scripts/run_bot.py` entrypoint.
+- Added manual GitHub Actions Windows runtime workflow.
+- Workflow applies Alembic migrations and starts the bot process on every manual run.
+- Inspected `siasoltoon/vps`: retained its Windows-runner pattern, but did not copy hardcoded credentials or unsafe RDP authentication settings.
+- Telegram StringSession secrets are now supported explicitly.
+- CI run 36177272784 PASS on Python 3.11/3.12.
+
 ## Next
-Execute the operator/environment-dependent verification matrix, record evidence in engineering memory, fix any discovered defects, rerun CI, then close the final release audit.
+Configure the required GitHub Actions secrets and execute the first real Telegram runtime verification. Then record the result and continue the remaining external verification matrix.
