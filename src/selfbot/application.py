@@ -5,7 +5,7 @@ from enum import StrEnum
 from .bootstrap import Runtime
 from .errors import classify_error
 from .logging import get_logger
-from .telegram import TelegramAdapter
+from .telegram import TelegramAdapter\nfrom .runtime_router import TelegramRuntimeRouter
 class ApplicationState(StrEnum):
     CREATED="created"; STARTING="starting"; RUNNING="running"; STOPPING="stopping"; STOPPED="stopped"; FAILED="failed"
 @dataclass(slots=True)
@@ -38,4 +38,4 @@ class Application:
             self.runtime.database.engine.dispose()
             self.state=ApplicationState.STOPPED
 def create_application(runtime: Runtime)->Application:
-    return Application(runtime=runtime,telegram=TelegramAdapter(runtime.settings,runtime.services.events))
+    telegram = TelegramAdapter(runtime.settings, runtime.services.events)\n    router = TelegramRuntimeRouter(telegram, runtime.settings.owner_id)\n    return Application(runtime=runtime, telegram=telegram, router=router)
