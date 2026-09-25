@@ -27,6 +27,7 @@ class Application:
     telegram: TelegramAdapter | MultiUserTelegramRuntime
     router: TelegramRuntimeRouter
     onboarding: OnboardingBot | None = None
+    panel_signer: PanelTokenSigner | None = None
     state: ApplicationState = ApplicationState.CREATED
 
     async def start(self) -> None:
@@ -41,7 +42,7 @@ class Application:
                 if isinstance(self.telegram, MultiUserTelegramRuntime):
                     if not self.onboarding.username:
                         raise ConfigurationError("Telegram onboarding bot username is unavailable")
-                    signer = getattr(self, "_panel_signer", None)
+                    signer = self.panel_signer
                     if signer is None:
                         raise ConfigurationError("panel signer is unavailable")
                     self.telegram.configure_panel(self.onboarding.username, signer.issue)
@@ -105,9 +106,7 @@ def create_application(runtime: Runtime) -> Application:
             allow_linked_accounts=True,
             services=runtime.services,
         )
-        app = Application(runtime=runtime, telegram=telegram, router=router, onboarding=onboarding)
-        setattr(app, "_panel_signer", signer)
-        return app
+        return Application(runtime=runtime, telegram=telegram, router=router, onboarding=onboarding, panel_signer=signer)
     telegram = TelegramAdapter(runtime.settings, runtime.services.events)
     router = TelegramRuntimeRouter(
         telegram,
