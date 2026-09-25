@@ -188,7 +188,8 @@ class TelegramAuthenticationService:
             from telethon import TelegramClient
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
-        return TelegramClient(None, self.api_id, self.api_hash)
+        from telethon.sessions import StringSession
+        return TelegramClient(StringSession(), self.api_id, self.api_hash)
 
     @staticmethod
     def _normalize_phone(phone: str) -> str:
@@ -641,6 +642,8 @@ class TelegramAuthenticationService:
         if not account_id:
             raise DependencyError("Telegram login succeeded but account identity was unavailable", retryable=False)
         session = client.session.save()
+        if not isinstance(session, str) or not session.strip():
+            raise DependencyError("Telegram login succeeded but a persistent StringSession was unavailable", retryable=False)
         self.store.save(owner_user_id, account_id, session)
         await client.disconnect()
         return account_id

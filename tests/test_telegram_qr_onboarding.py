@@ -68,6 +68,14 @@ def make_store():
     )
 
 
+def test_real_telethon_qr_client_uses_persistent_string_session():
+    db, store = make_store()
+    auth = TelegramAuthenticationService("12345", "hash", store, ttl_seconds=120)
+    client = auth._new_client()
+    assert client.session.__class__.__name__ == "StringSession"
+
+
+
 def test_qr_login_generates_png_and_persists_session():
     db, store = make_store()
     clients = []
