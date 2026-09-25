@@ -46,7 +46,7 @@ class TelegramRuntimeRouter:
 
         # Commands are deliberately restricted to messages sent by the connected
         # account itself. This prevents a group member from controlling the owner.
-        if not bool(event.payload.get("outgoing", False)):
+        if "outgoing" in event.payload and not bool(event.payload.get("outgoing")):
             return
 
         text = str(event.payload.get("text") or "").strip()
