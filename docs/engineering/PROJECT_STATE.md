@@ -2,10 +2,10 @@
 
 ## Current Position
 - Roadmap: Phases 1-25 code-side implementation/hardening sweep completed.
-- Status: IN PROGRESS — final external verification gate; Telegram resend protocol hardening is merged and CI-verified, but real Telegram onboarding still requires a fresh external test.
-- Latest merged implementation: PR #17, Telegram resend protocol correction, merge commit df2ce3c646cf2033bf90dd4cba49d1ff3eb44b9e.
+- Status: IN PROGRESS — final external verification gate; QR onboarding is CI-verified, but real Telegram QR onboarding still requires a fresh external test.
+- Latest implementation unit: PR #18, Telegram QR onboarding, branch `feat/telegram-qr-onboarding`.
 - PR #16 remains the preceding code-expiry recovery implementation.
-- New hardening branch: Telegram resend protocol now reuses the same Telethon client so `send_code_request()` can follow Telethon's `auth.resendCode` path.
+- Production onboarding no longer collects Telegram login codes inside the onboarding bot chat; QR login is now the primary flow, with transient 2FA support.
 
 ## Completed Code-Side Work
 - Phases 0-3 foundation/plugin system.
@@ -18,6 +18,7 @@
 - Phase 25 final-release audit model.
 - Multi-user Telegram onboarding with encrypted Telethon StringSession persistence.
 - Secure structured diagnostics for Telegram phone-code and 2FA authentication failures.
+- QR onboarding with transient QR image delivery, background wait, expiry/cancellation cleanup, 2FA continuation, and encrypted session persistence.
 
 ## Final External Verification Gate
 The repository does not claim production release merely from framework/unit/CI evidence. Remaining work requires real credentials, real Telegram/provider behavior, labeled OCR data, real worker transport, deployed environments, backup/restore, performance/load and rollback/recovery evidence.
@@ -35,7 +36,7 @@ The repository does not claim production release merely from framework/unit/CI e
 - Persistent session records use encrypted storage and support revoke/disconnect.
 - Connected accounts run as independent Telethon clients and route commands per linked account.
 - PR #15 adds lifecycle/error diagnostics while redacting login codes, passwords, phone_code_hash, API credentials, and session material.
-- PR #16 adds recoverable code-expiry handling and `/resend`; follow-up hardening corrects `/resend` to reuse the existing client/auth hash instead of starting a separate authorization request.
+- PR #16 adds recoverable code-expiry handling and `/resend`; PR #17 corrected the resend protocol. PR #18 moves the production onboarding interaction to QR login while retaining the legacy phone/code service only for compatibility.
 
 ## Next
-Repeat the real Telegram `/connect` flow against the merged PR #17 build. If the code expires, use `/resend` once and enter only the newest code. Record whether the linked session is persisted and usable before advancing the final verification matrix.
+Run the real Telegram `/connect` flow against PR #18/main after merge. Scan the QR with another already-authorized Telegram device, complete 2FA if requested, and verify encrypted session persistence plus linked-account message routing.
