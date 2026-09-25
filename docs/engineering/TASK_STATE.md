@@ -4,7 +4,7 @@
 Complete the first real multi-user Telegram onboarding verification using QR login, including the post-scan 2FA path.
 
 ## Status
-IN PROGRESS — the first real QR test successfully reached Telegram QR acceptance and 2FA, but the transient client was disconnected before 2FA completion because the original QR TTL was reused. PR #19 fixed and CI-verified that lifecycle bug; a fresh real test is now required.
+IN PROGRESS — the real QR test reached Telegram acceptance and 2FA, then Telegram created an authenticated session but application-side StringSession persistence failed. PR #20 fixed the persistence mechanism; PR #21 additionally revokes an authenticated session if durable persistence fails. Both are CI-verified and merged. A fresh real test is now required.
 
 ## Latest Verified Implementation
 - PR #14 implements multi-user onboarding and independent account runtime.
@@ -12,6 +12,8 @@ IN PROGRESS — the first real QR test successfully reached Telegram QR acceptan
 - PR #18 adds Telethon QR login as the production onboarding path.
 - PR #19 extends the pending session lifetime when QR authentication succeeds and Telegram requests 2FA.
 - PR #19 CI run 36187266466 passed on Python 3.11 and 3.12 and was merged to main as 76a4e9d2887f1bebfee9eb0c5b5c5f5486294787.
+- PR #20 CI run 36187991097 passed and was merged to main as 1a74d35d44f958466f9d16eab903253fbbf96fc0.
+- PR #21 first CI run 36188334722 failed because its new regression expected the pre-wrap RuntimeError; the test was corrected to expect DependencyError. PR #21 CI run 36188868237 then passed on Python 3.11 and 3.12 and was merged to main as df5b27344bcc498d252c4e5786119ca0702fa1fc.
 
 ## Real QR Test Diagnosis
 - QR generation, upload, scan and Telegram-side acceptance all succeeded.
