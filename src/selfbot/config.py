@@ -34,6 +34,8 @@ class Settings:
     pc_worker_token: str | None
     owner_id: str | None = None
     telegram_session_is_string: bool = True
+    telegram_onboarding_bot_token: str | None = None
+    telegram_session_encryption_key: str | None = None
 
 
 def load_settings() -> Settings:
@@ -74,4 +76,6 @@ def load_settings() -> Settings:
         pc_worker_url=worker_url,
         pc_worker_token=worker_token,
         owner_id=owner_id,
+        telegram_onboarding_bot_token=os.getenv("TELEGRAM_ONBOARDING_BOT_TOKEN") or None,
+        telegram_session_encryption_key=os.getenv("TELEGRAM_SESSION_ENCRYPTION_KEY") or None,
     )
