@@ -913,7 +913,7 @@ class OnboardingBot:
             try:
                 record = self.store.get_connected(owner_id)
                 text, buttons = self._panel_view(owner_id)
-                result = event.builder.article(
+                result = await event.builder.article(
                     "🤖 Selfbot Panel",
                     text=text,
                     buttons=buttons,
