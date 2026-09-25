@@ -33,8 +33,17 @@
 - PR #20 CI run 36187991097 — PASS; verifies production QR client uses `StringSession` and persists the serialized session.
 - PR #21 CI run 36188334722 — FAIL on the first attempt due to a test expectation mismatch; fixed. PR #21 CI run 36188868237 — PASS on Python 3.11/3.12; verifies authenticated-session revocation when persistence fails.
 
+## Real Telegram External Verification — 2026-09-25
+- Fresh real `/connect` against current main created and delivered a QR challenge.
+- Telegram accepted the QR and requested 2FA; 2FA completed successfully.
+- Application returned `اتصال با موفقیت انجام شد. شناسه داخلی تلگرام: 1261331908`.
+- No post-auth persistence exception appeared in the runtime log; the client disconnected cleanly after finalization.
+- RESULT: PASS for real QR + 2FA onboarding and application-level session finalization.
+
 ## Remaining External Verification
-- Real Telegram login/session and message flow
+- `/status` active-account check
+- linked-account message/command routing
+- session reuse after controlled restart
 - Alembic migration smoke test against real target database
 - AI/STT/TTS/search providers
 - PC Worker transport/heartbeat/claim/retry/offline recovery
