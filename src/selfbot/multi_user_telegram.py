@@ -353,6 +353,9 @@ class TelegramAuthenticationService:
         except Exception as exc:
             if exc.__class__.__name__ == "SessionPasswordNeededError":
                 item.two_fa_required = True
+                # The QR itself may expire immediately after scanning. Keep the
+                # authenticated transient client alive for the separate 2FA step.
+                item.expires_at = time.monotonic() + self.ttl_seconds
                 self.logger.info(
                     "telegram qr login accepted; 2fa required",
                     extra={"context": {
