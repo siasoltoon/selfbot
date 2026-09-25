@@ -353,6 +353,7 @@ class TelegramAuthenticationService:
                     }},
                 )
                 raise ValidationError("Telegram login code must contain only digits")
+            item.code_attempts += 1
             started = time.monotonic()
             self.logger.info(
                 "telegram login code verification started",
@@ -360,7 +361,9 @@ class TelegramAuthenticationService:
                     "stage": "verify_code",
                     "owner_fingerprint": self._owner_fingerprint(owner_user_id),
                     "phone_masked": self._mask_phone(item.phone),
-                    "pending_age_seconds": round(max(0.0, time.monotonic() - (item.expires_at - self.ttl_seconds)), 3),
+                    "pending_age_seconds": round(max(0.0, time.monotonic() - item.code_requested_at), 3),
+                    "code_attempt": item.code_attempts,
+                    "telegram_code_timeout_seconds": item.code_timeout_seconds,
                 }},
             )
             try:
@@ -671,10 +674,24 @@ class OnboardingBot:
             await event.reply("کد ورود تلگرام را بفرست. این کد ذخیره نمی‌شود.")
             return
         if state == "code":
+            if lower == "/resend":
+                try:
+                    await self.auth.resend_code(user_id)
+                except Exception:
+                    await event.reply("ارسال مجدد کد ناموفق بود. چند لحظه صبر کن و دوباره /resend را بزن.")
+                    return
+                await event.reply("کد جدید ارسال شد. فقط آخرین کد دریافتی را وارد کن.")
+                return
             try:
                 result = await self.auth.verify_code(user_id, text)
-            except Exception:
-                await event.reply("کد نامعتبر یا منقضی است. /connect را دوباره اجرا کن.")
+            except Exception as exc:
+                if exc.__class__.__name__ == "PhoneCodeExpiredError":
+                    await event.reply("کد منقضی شده است. برای دریافت کد جدید /resend را بزن.")
+                    return
+                if exc.__class__.__name__ == "PhoneCodeInvalidError":
+                    await event.reply("کد نادرست است. همان آخرین کدی را که تلگرام فرستاده وارد کن؛ برای کد جدید /resend را بزن.")
+                    return
+                await event.reply("ورود با کد ناموفق بود. /connect را دوباره اجرا کن.")
                 self._states.pop(user_id, None)
                 return
             if result == "2fa_required":
