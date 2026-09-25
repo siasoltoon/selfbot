@@ -166,8 +166,8 @@ class TelegramAuthenticationService:
     async def begin(self, owner_user_id: str, phone: str) -> None:
         phone = self._normalize_phone(phone)
         async with self._lock:
-            self._cleanup_expired()
-            old = self._pending.pop(owner_user_id, None)
+            await self._cleanup_expired()
+            old = self._pending.pop(owner_user_id, None
             if old:
                 await old.client.disconnect()
             client = self._new_client()
@@ -206,7 +206,7 @@ class TelegramAuthenticationService:
         if not password:
             raise ValidationError("2FA password must not be empty")
         async with self._lock:
-            item = self._get_pending(owner_user_id)
+            item = await self._get_pending(owner_user_id)
             try:
                 await item.client.sign_in(password=password)
             finally:
