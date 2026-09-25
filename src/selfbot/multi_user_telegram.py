@@ -44,6 +44,11 @@ class PendingLogin:
     client: AuthClient
     phone_code_hash: str
     expires_at: float
+    code_requested_at: float
+    code_timeout_seconds: int | None = None
+    code_type: str | None = None
+    next_code_type: str | None = None
+    code_attempts: int = 0
 
 
 class TelegramSessionStore:
