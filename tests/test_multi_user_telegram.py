@@ -61,12 +61,12 @@ def make_store():
     db = Database("sqlite:///:memory:")
     db.create_schema_for_tests()
     return db, TelegramSessionStore(db, SessionCipher(
-        "9M8Hh7zG1Qk1nM2K0x5nV8Q9mJ9n2v0k9z5dQ7sH4wM="
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     ))
 
 
 def test_session_cipher_round_trip():
-    cipher = SessionCipher("9M8Hh7zG1Qk1nM2K0x5nV8Q9mJ9n2v0k9z5dQ7sH4wM=")
+    cipher = SessionCipher("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
     token = cipher.encrypt("telethon-session")
     assert token != "telethon-session"
     assert cipher.decrypt(token) == "telethon-session"
