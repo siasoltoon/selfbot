@@ -167,7 +167,7 @@ class TelegramAuthenticationService:
         phone = self._normalize_phone(phone)
         async with self._lock:
             await self._cleanup_expired()
-            old = self._pending.pop(owner_user_id, None
+            old = self._pending.pop(owner_user_id, None)
             if old:
                 await old.client.disconnect()
             client = self._new_client()
