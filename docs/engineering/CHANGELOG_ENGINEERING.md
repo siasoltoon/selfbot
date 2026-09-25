@@ -51,3 +51,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - Verified against Telegram/Telethon behavior that a true resend preserves the existing `phone_code_hash`; Telethon's `send_code_request()` uses `auth.resendCode` when its internal hash is present.
 - Corrected `/resend` to reuse the existing transient client instead of creating a second authorization client.
 - Updated regression coverage to verify the same client handles the initial request, resend, and verification.
+
+## 2026-09-25 — Real Telegram retry diagnosis and resend correction
+- Real runtime test reproduced `PhoneCodeExpiredError` twice: once 13.8 seconds after the initial code request and once 12.3 seconds after `/resend`.
+- Both requests reported `SentCodeTypeApp`; Telegram connection, DC migration and code-request calls succeeded.
+- The fresh-client resend approach was therefore not sufficient. PR #17 changed `/resend` to reuse the existing Telethon client and preserve its internal phone-code hash so Telethon can invoke the official resend-code protocol.
+- PR #17 CI run 36185340785 passed on Python 3.11 and 3.12.
+- Real Telegram onboarding remains unverified until the merged implementation succeeds externally.
