@@ -21,9 +21,9 @@ class FakeSession:
 
 
 class FakeQR:
-    def __init__(self, *, require_2fa: bool = False):
+    def __init__(self, *, require_2fa: bool = False, ttl_seconds: int = 60):
         self.url = "tg://login?token=test-token"
-        self.expires = datetime.now(timezone.utc) + timedelta(seconds=60)
+        self.expires = datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)
         self.require_2fa = require_2fa
 
     async def wait(self, timeout=None):
@@ -33,9 +33,9 @@ class FakeQR:
 
 
 class FakeQRClient:
-    def __init__(self, *, require_2fa=False):
+    def __init__(self, *, require_2fa=False, qr_ttl_seconds=60):
         self.session = FakeSession()
-        self.qr = FakeQR(require_2fa=require_2fa)
+        self.qr = FakeQR(require_2fa=require_2fa, ttl_seconds=qr_ttl_seconds)
         self.connected = False
         self.disconnected = False
         self.ignored_ids = None
@@ -105,16 +105,16 @@ def test_qr_login_requires_2fa_then_finalizes():
     clients = []
 
     def factory(*_):
-        client = FakeQRClient(require_2fa=True)
+        client = FakeQRClient(require_2fa=True, qr_ttl_seconds=1)
         clients.append(client)
         return client
 
-    auth = TelegramAuthenticationService("12345", "hash", store, client_factory=factory)
+    auth = TelegramAuthenticationService("12345", "hash", store, client_factory=factory, ttl_seconds=5)
 
     async def run():
         await auth.begin_qr("owner-1")
         assert await auth._pending_qr["owner-1"].wait_task == "2fa_required"
-        assert auth._pending_qr["owner-1"].expires_at > 0
+        assert auth._pending_qr["owner-1"].expires_at - __import__("time").monotonic() > 4
         return await auth.verify_qr_2fa("owner-1", "secret-password")
 
     assert asyncio.run(run()) == "654321"
