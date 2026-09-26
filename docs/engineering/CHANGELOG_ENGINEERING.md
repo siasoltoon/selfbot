@@ -91,3 +91,11 @@ Only environment-dependent verification remains before final release: real Teleg
 
 ## 2026-09-25 — Engineering fix
 - Fixed missing onboarding-bot `/panel` and `/پنل` routing; added regression test; merged PR #24 as `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
+
+
+## 2026-09-26 — Professional Telegram Panel v2
+- Merged PR #25 as d504af985246efa1480b73182b17c790a56bc175.
+- Replaced flat capability switchboard with hierarchical Control Center navigation.
+- Added module categories, nested sub-capabilities, parent/child durable state, global status, and Account/System section.
+- Preserved fail-closed owner token verification and non-disableable Security/Task core controls.
+- CI run 36266208463 passed on Python 3.11/3.12.
