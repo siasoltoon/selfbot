@@ -79,3 +79,11 @@ Do not mark the entire project release PASS until those evidence items are compl
 - PR #30 merged as 965b0e925c2bd832d8b8ac3cd966c396e80fbb4c.
 - Added a real Telethon Myoi adapter for @MeowieeeQBot: bot resolution, command sending, recent-message/button observation and visible-label button clicking. It is exposed from linked-account runtime.
 - Myoi-specific workflows are deliberately not guessed; real bot behavior must be observed before implementing fishing/factory/roulette/etc.
+
+
+## 2026-09-27 — External Database Persistence
+- `DATABASE_URL` now supports SQLite, PostgreSQL and SQL Server via `mssql+pyodbc`.
+- Added durable migration `0003_durable_runtime_state` for domain state, security audit, encrypted Telegram sessions and internal diamond economy tables.
+- Alembic metadata now imports every durable ORM model so fresh external databases receive the required schema.
+- GitHub Windows runtime installs the optional SQL Server driver and performs a database ping after migrations.
+- External SQL Server connectivity is configuration-dependent; no external database is claimed PASS until an operator provides a reachable database and runs the migration smoke test.
