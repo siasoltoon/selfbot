@@ -68,3 +68,11 @@ A phase remains non-final until its required evidence is recorded.
 - PR #24 CI run `36195321075` passed on Python 3.11 and 3.12.
 - Real Telegram panel interaction is still pending after deployment of merge `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
 - Do not mark the runtime interaction as PASS until the current runtime is restarted and `/panel` is exercised in Saved Messages and onboarding-bot chat.
+
+
+## Professional Telegram Panel v2 — 2026-09-26
+- PR #25 branch CI run 36266208463 — PASS on Python 3.11 and 3.12.
+- Compileall — PASS on both versions.
+- Pytest — PASS on both versions; branch reached 81 passing tests.
+- New tests cover hierarchical categories, parent/child cascade behavior, core Security/Tasks invariants, and onboarding-bot panel rendering.
+- Real Telegram v2 UI interaction is NOT yet claimed PASS; runtime must be restarted from the merged main commit and operator must exercise the nested navigation.
