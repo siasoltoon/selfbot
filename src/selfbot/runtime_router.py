@@ -1,6 +1,9 @@
 """Runtime routing from Telegram events to safe built-in commands."""
 from __future__ import annotations
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import ast
+import operator
 from typing import Protocol
 from .errors import AuthorizationError, NotFoundError, ValidationError
 from .services import CoreServices
@@ -37,6 +40,37 @@ class TelegramRuntimeRouter:
         if not parts:
             return "", []
         return parts[0].split("@", 1)[0].lower(), parts[1:]
+
+
+    @staticmethod
+    def _safe_calculate(expression: str) -> int | float:
+        if len(expression) > 200:
+            raise ValidationError("عبارت بیش از حد طولانی است")
+        allowed = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv, ast.USub: operator.neg, ast.UAdd: operator.pos}
+        tree = ast.parse(expression.replace("×", "*").replace("÷", "/"), mode="eval")
+        def visit(node):
+            if isinstance(node, ast.Expression): return visit(node.body)
+            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool): return node.value
+            if isinstance(node, ast.BinOp) and type(node.op) in allowed:
+                left, right = visit(node.left), visit(node.right)
+                if isinstance(node.op, ast.Div) and right == 0: raise ValidationError("تقسیم بر صفر مجاز نیست")
+                result = allowed[type(node.op)](left, right)
+                if abs(result) > 10**15: raise ValidationError("نتیجه بیش از حد بزرگ است")
+                return result
+            if isinstance(node, ast.UnaryOp) and type(node.op) in allowed: return allowed[type(node.op)](visit(node.operand))
+            raise ValidationError("عبارت محاسباتی نامعتبر است")
+        return visit(tree)
+
+    async def _require_capability(self, event, owner_id: str, capability_id: str) -> bool:
+        if self.services is None:
+            await self._send(event, "سرویس قابلیت‌ها در دسترس نیست.")
+            return False
+        try:
+            self.services.capabilities.require(owner_id, capability_id)
+            return True
+        except (ValidationError, NotFoundError) as exc:
+            await self._send(event, f"این قابلیت خاموش است: {exc}")
+            return False
 
     async def _handle_message(self, event) -> None:
         if self.owner_id:
@@ -164,6 +198,40 @@ class TelegramRuntimeRouter:
             except (ValueError, ValidationError, AuthorizationError, NotFoundError) as exc:
                 await self._send(event, f"❌ کاهش الماس انجام نشد: {exc}")
             return
+
+
+        if command in {".پینگ", "/پینگ", "/ping"}:
+            if await self._require_capability(event, owner_id, "panel_ping"):
+                await self._send(event, "🏓 pong")
+            return
+        if command in {".وضعیت", "/وضعیت"}:
+            if await self._require_capability(event, owner_id, "panel_utility_status"):
+                snapshot = self.services.capabilities.snapshot(owner_id)
+                await self._send(event, f"🟢 Selfbot فعال است. قابلیت‌های روشن: {sum(snapshot.values())}/{len(snapshot)}")
+            return
+        if command in {".امروز", "/امروز"}:
+            if await self._require_capability(event, owner_id, "panel_utility_today"):
+                now = datetime.now().astimezone()
+                await self._send(event, f"📅 {now.strftime('%Y-%m-%d')}\\n🕐 {now.strftime('%H:%M:%S %Z')}")
+            return
+        if command in {".ایدی", "/ایدی"}:
+            if await self._require_capability(event, owner_id, "panel_utility_id"):
+                await self._send(event, f"🆔 آیدی عددی: {event.payload.get('reply_to_user_id') or owner_id}")
+            return
+        if command in {".کنسل", "/کنسل"}:
+            if await self._require_capability(event, owner_id, "panel_utility_cancel"):
+                await self._send(event, "🛑 درخواست لغو ثبت شد.")
+            return
+        if text.startswith(".") and command not in {".موجودی", ".تاریخچه", ".تاریخچه_تراکنش", ".انتقال", ".افزایش", ".کاهش"}:
+            expression = text[1:].strip()
+            if expression and any(ch.isdigit() for ch in expression) and any(ch in expression for ch in "+-*/×÷"):
+                if await self._require_capability(event, owner_id, "panel_calculator"):
+                    try:
+                        result = self._safe_calculate(expression)
+                        await self._send(event, f"🧮 {result:g}" if isinstance(result, float) else f"🧮 {result}")
+                    except (ValueError, SyntaxError, ValidationError) as exc:
+                        await self._send(event, f"❌ محاسبه نامعتبر است: {exc}")
+                return
 
         if command == "/ping":
             await self._send(event, "pong")
