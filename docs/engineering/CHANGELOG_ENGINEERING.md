@@ -99,3 +99,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added module categories, nested sub-capabilities, parent/child durable state, global status, and Account/System section.
 - Preserved fail-closed owner token verification and non-disableable Security/Task core controls.
 - CI run 36266208463 passed on Python 3.11/3.12.
+
+
+## 2026-09-26 — Internal Diamond Economy
+- Added persistent wallet and transaction ledger, migration 0004, configurable safe transfer policy and owner-only admin adjustment.
+- Added .موجودی, .انتقال, .تاریخچه, .افزایش الماس and .کاهش الماس.
+- Added Telegram username/reply recipient resolution and focused regression tests.
+- PR #27 merged to main as 508472022e61577a1597d016012893b31a891c14 with Python 3.11/3.12 CI green.
