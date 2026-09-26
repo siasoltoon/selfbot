@@ -19,6 +19,7 @@ from .agents import AgentRouter
 from .domain_store import DomainStore
 from .hardening import StoragePolicy
 from .capabilities import CapabilityService
+from .economy import EconomyPolicy, EconomyService
 
 
 @dataclass(slots=True)
@@ -41,6 +42,7 @@ class CoreServices:
     agents: AgentRouter
     storage_policy: StoragePolicy
     admin: AdminService | None
+    economy: EconomyService
 
     @classmethod
     def create(
@@ -50,12 +52,15 @@ class CoreServices:
         permission_checker: PermissionChecker | None = None,
         plugin_permission_checker: PluginPermissionChecker | None = None,
         owner_id: str | None = None,
+        economy_policy: EconomyPolicy | None = None,
     ) -> "CoreServices":
         events = EventRouter()
         tasks = TaskManager(database)
         domain_store = DomainStore(database)
         security = SecurityService(owner_id) if owner_id else None
         admin = AdminService(owner_id) if owner_id else None
+        capabilities = CapabilityService(domain_store)
+        economy = EconomyService(database, capabilities, owner_id=owner_id, policy=economy_policy)
         return cls(
             database,
             events,
@@ -64,7 +69,7 @@ class CoreServices:
             Scheduler(tasks),
             PluginManager(permission_checker=plugin_permission_checker),
             domain_store,
-            CapabilityService(domain_store),
+            capabilities,
             LearningEngine(),
             WorkflowEngine(),
             ReminderService(),
@@ -75,4 +80,5 @@ class CoreServices:
             AgentRouter(),
             StoragePolicy(),
             admin,
+            economy,
         )
