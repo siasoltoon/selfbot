@@ -53,6 +53,7 @@ class Settings:
     diamond_min_fee: int = 1
     diamond_max_fee: int = 100
     diamond_max_admin_adjustment: int = 100000
+    myoi_bot_username: str = "MeowieeeQBot"
 
 
 def load_settings() -> Settings:
@@ -98,6 +99,10 @@ def load_settings() -> Settings:
     if diamond_max_admin_adjustment < 1:
         raise ConfigurationError("DIAMOND_MAX_ADMIN_ADJUSTMENT must be positive")
 
+    myoi_bot_username = (os.getenv("MYOI_BOT_USERNAME") or "MeowieeeQBot").strip().lstrip("@")
+    if not myoi_bot_username:
+        raise ConfigurationError("MYOI_BOT_USERNAME must not be empty")
+
     return Settings(
         environment=environment,
         log_level=log_level,
@@ -120,4 +125,5 @@ def load_settings() -> Settings:
         diamond_min_fee=diamond_min_fee,
         diamond_max_fee=diamond_max_fee,
         diamond_max_admin_adjustment=diamond_max_admin_adjustment,
+        myoi_bot_username=myoi_bot_username,
     )
