@@ -48,18 +48,21 @@ def _message_view(message: Any) -> dict[str, Any]:
     }
 
 
-async def probe() -> dict[str, Any]:
+def _build_client(api_id: int, api_hash: str, session: str) -> Any:
     try:
         from telethon import TelegramClient
         from telethon.sessions import StringSession
     except ImportError as exc:
         raise ConfigurationError("Telethon is required for the live Myoi probe") from exc
+    return TelegramClient(StringSession(session), api_id, api_hash)
 
+
+async def probe() -> dict[str, Any]:
     api_id = int(_required("TELEGRAM_API_ID"))
     api_hash = _required("TELEGRAM_API_HASH")
     session = _required("TELEGRAM_SESSION")
     bot_username = os.getenv("MYOI_BOT_USERNAME", "MeowieeeQBot").strip().lstrip("@")
-    client = TelegramClient(StringSession(session), api_id, api_hash)
+    client = _build_client(api_id, api_hash, session)
     adapter = MyoiTelegramAdapter(client, bot_username=bot_username)
 
     groups: list[ProbeGroup] = []
