@@ -11,7 +11,7 @@ def test_panel_has_hierarchical_categories_and_children():
     panel = PanelService(service)
 
     category_ids = {item.category_id for item in panel.categories()}
-    assert {"ai", "memory", "voice", "web", "media", "automation", "plugins", "worker", "data", "analytics", "security"} <= category_ids
+    assert {"myoi_core", "myoi_auto", "security", "content", "tools"} <= category_ids
     assert panel.children("ai")
     assert {item.capability_id for item in panel.children("ai")} >= {"ai_chat", "ai_summarize", "ai_translate", "ai_context"}
     db.engine.dispose()
