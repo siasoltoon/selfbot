@@ -14,6 +14,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from selfbot.db import Base  # noqa: E402
 from selfbot.models import SystemMetadata  # noqa: F401,E402
 from selfbot.task_models import TaskRecord  # noqa: F401,E402
+from selfbot.domain_models import DomainState, SecurityAuditRecord  # noqa: F401,E402
+from selfbot.multi_user_models import TelegramAccount  # noqa: F401,E402
+from selfbot.economy_models import DiamondWallet, DiamondTransaction  # noqa: F401,E402
 
 config = context.config
 

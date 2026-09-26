@@ -91,3 +91,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Completed PR #30: real Telegram transport adapter for @MeowieeeQBot.
 - Adapter operates on visible Telegram messages/buttons rather than invented callback/API contracts.
 - Next task: capture real Myoi bot observations with a linked account, then implement one workflow end-to-end with recorded evidence before expanding to the remaining Myoi modules.
+
+
+## 2026-09-27 — External Database Persistence
+- Added deployment-agnostic external SQL Server persistence support through `DATABASE_URL=mssql+pyodbc://...`.
+- Added the missing durable migration covering Telegram sessions, domain state, security audit and diamond economy.
+- Runtime startup now installs the SQL Server driver in the GitHub Windows workflow and verifies database connectivity after migration.
+- Next: create/configure the operator's SQL Server Express instance, set the encrypted `DATABASE_URL` GitHub secret, run the runtime workflow, and verify migration + session reuse across a restart.

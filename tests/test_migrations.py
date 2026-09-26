@@ -20,3 +20,8 @@ def test_alembic_upgrade_head(tmp_path):
     assert "alembic_version" in tables
     assert "system_metadata" in tables
     assert "tasks" in tables
+    assert "domain_state" in tables
+    assert "security_audit" in tables
+    assert "telegram_accounts" in tables
+    assert "diamond_wallets" in tables
+    assert "diamond_transactions" in tables

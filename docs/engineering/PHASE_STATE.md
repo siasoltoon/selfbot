@@ -79,3 +79,7 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Panel v2 catalog is no longer only UI metadata: core utility/calculator capabilities have real runtime handlers and capability gates.
 - Myoi integration now has a dedicated real Telegram adapter for @MeowieeeQBot.
 - Remaining Myoi implementation is evidence-driven: observe actual bot messages/buttons first, then add workflow-specific services and tests.
+
+
+## 2026-09-27 — External Database Persistence
+- Phase 20 Storage Hardening: SQL Server persistence path is now implemented in code; real target-database migration/connectivity evidence remains.

@@ -68,8 +68,8 @@ def load_settings() -> Settings:
     database_url = os.getenv("DATABASE_URL", "sqlite:///./data/selfbot.db").strip()
     if not database_url:
         raise ConfigurationError("DATABASE_URL must not be empty")
-    if not database_url.startswith(("sqlite://", "postgresql://", "postgresql+")):
-        raise ConfigurationError("DATABASE_URL must use SQLite or PostgreSQL")
+    if not database_url.startswith(("sqlite://", "postgresql://", "postgresql+", "mssql+pyodbc://")):
+        raise ConfigurationError("DATABASE_URL must use SQLite, PostgreSQL, or SQL Server via mssql+pyodbc")
 
     worker_enabled = _bool_env("PC_WORKER_ENABLED", False)
     worker_url = os.getenv("PC_WORKER_URL")
