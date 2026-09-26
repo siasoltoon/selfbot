@@ -78,3 +78,13 @@
 - Self-transfer is rejected and fees are charged to the sender.
 - Admin credit/debit is restricted to the configured owner and is recorded with actor/reason metadata.
 - No earning rule is invented yet; future earning sources must use EconomyService.
+
+
+## Decision — Real Panel Execution (2026-09-26)
+- Capability toggles must affect runtime behavior, not only persist UI state.
+- Existing command contracts are preserved where possible; adding capability gates must not break legacy router tests when the capability service is intentionally absent.
+
+## Decision — Myoi Adapter Boundary (2026-09-26)
+- @MeowieeeQBot is integrated through a dedicated Telegram adapter, separate from the internal diamond economy.
+- Do not invent callback data, hidden APIs, or game semantics. The adapter may inspect visible button labels and click the corresponding real Telegram button.
+- Specific Myoi workflows are implemented only after live observation and regression evidence.
