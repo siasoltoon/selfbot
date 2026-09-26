@@ -68,3 +68,13 @@
 - Use inline callback editing for navigation so the panel behaves like a single control surface rather than producing chat spam.
 - Keep capability state in CapabilityService/domain_state and make parent/child relationships explicit.
 - Security and Task/Scheduler remain core non-disableable controls.
+
+
+## Decision — Internal Diamond Economy (2026-09-26)
+- Diamonds are an internal Selfbot currency and are independent from @MeowieeeQBot.
+- Monetary state uses dedicated wallet and append-only transaction tables, not generic JSON state.
+- User transfers require the Selfbot owner's economy capability; the recipient's capability state is irrelevant.
+- Safe defaults: minimum 1, maximum 1,000, daily sent limit 3,000, fee 1% with 1 minimum and 100 maximum, admin adjustment maximum 100,000.
+- Self-transfer is rejected and fees are charged to the sender.
+- Admin credit/debit is restricted to the configured owner and is recorded with actor/reason metadata.
+- No earning rule is invented yet; future earning sources must use EconomyService.
