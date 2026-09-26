@@ -10,6 +10,7 @@ class TelegramTransport(Protocol):
     events: object
     async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None): ...
     async def open_panel(self, chat_id: str | int, *, owner_id: str, account_id: str | None = None): ...
+    async def resolve_user_id(self, identifier: str, *, account_id: str | None = None) -> str: ...
 
 
 @dataclass(slots=True)
@@ -50,7 +51,7 @@ class TelegramRuntimeRouter:
             return
 
         text = str(event.payload.get("text") or "").strip()
-        if not text.startswith("/"):
+        if not (text.startswith("/") or text.startswith(".")):
             return
 
         command, args = self._command(text)
@@ -69,6 +70,99 @@ class TelegramRuntimeRouter:
                     event,
                     "پنل تعاملی در دسترس نیست. قابلیت Inline Mode ربات مدیریت را بررسی کن.",
                 )
+            return
+
+        if command in {".موجودی", "/موجودی"}:
+            if self.services is None:
+                await self._send(event, "سرویس اقتصاد در دسترس نیست.")
+                return
+            try:
+                self.services.economy.capabilities.require(owner_id, self.services.economy.DOMAIN_CAPABILITY)
+                balance = self.services.economy.balance(owner_id)
+                await self._send(event, f"💎 موجودی شما: {balance:,} الماس")
+            except (ValidationError, NotFoundError) as exc:
+                await self._send(event, f"موجودی قابل دریافت نیست: {exc}")
+            return
+
+        if command in {".تاریخچه", ".تاریخچه_تراکنش", "/تاریخچه"}:
+            if self.services is None:
+                await self._send(event, "سرویس اقتصاد در دسترس نیست.")
+                return
+            try:
+                self.services.economy.capabilities.require(owner_id, self.services.economy.DOMAIN_CAPABILITY)
+                rows = self.services.economy.history(owner_id, limit=10)
+                if not rows:
+                    await self._send(event, "💎 هنوز تراکنشی ثبت نشده است.")
+                    return
+                lines = ["💎 آخرین تراکنش‌ها:"]
+                for row in rows:
+                    if row.kind == "transfer":
+                        direction = "ارسال" if row.sender_id == owner_id else "دریافت"
+                        lines.append(f"• {direction}: {row.amount:,} | کارمزد: {row.fee:,}")
+                    else:
+                        direction = "افزایش ادمین" if row.kind == "admin_credit" else "کاهش ادمین"
+                        lines.append(f"• {direction}: {row.amount:,}")
+                await self._send(event, "\n".join(lines))
+            except (ValidationError, NotFoundError) as exc:
+                await self._send(event, f"تاریخچه قابل دریافت نیست: {exc}")
+            return
+
+        if command in {".انتقال", "/انتقال"}:
+            if self.services is None or not args:
+                await self._send(event, "فرمت: .انتقال [مقدار] [@username/ID] یا Reply")
+                return
+            try:
+                amount = int(args[0])
+            except ValueError:
+                await self._send(event, "مقدار الماس باید عدد صحیح باشد.")
+                return
+            target = args[1] if len(args) >= 2 else event.payload.get("reply_to_user_id")
+            if not target:
+                await self._send(event, "مقصد را با @username/ID یا Reply مشخص کن.")
+                return
+            try:
+                if str(target).startswith("@") and hasattr(self.telegram, "resolve_user_id"):
+                    target = await self.telegram.resolve_user_id(str(target), account_id=account_id)
+                recipient = str(target).strip()
+                result = self.services.economy.transfer(owner_id, recipient, amount)
+                await self._send(
+                    event,
+                    f"✅ انتقال انجام شد.\n💎 مبلغ: {result.amount:,}\n💳 کارمزد: {result.fee:,}\n💎 موجودی جدید: {result.sender_balance:,}",
+                )
+            except (ValidationError, NotFoundError, AuthorizationError) as exc:
+                await self._send(event, f"❌ انتقال انجام نشد: {exc}")
+            return
+
+        if command in {".افزایش", "/افزایش"} and len(args) >= 3 and args[0] == "الماس":
+            if self.services is None:
+                await self._send(event, "سرویس اقتصاد در دسترس نیست.")
+                return
+            try:
+                amount = int(args[1])
+                target = args[2]
+                if str(target).startswith("@") and hasattr(self.telegram, "resolve_user_id"):
+                    target = await self.telegram.resolve_user_id(str(target), account_id=account_id)
+                balance = self.services.economy.adjust(owner_id, str(target), amount, reason=" ".join(args[3:]) or "admin credit")
+                await self._send(event, f"✅ {amount:,} الماس اضافه شد. موجودی جدید: {balance:,}")
+            except (ValueError, ValidationError, AuthorizationError, NotFoundError) as exc:
+                await self._send(event, f"❌ افزایش الماس انجام نشد: {exc}")
+            return
+
+        if command in {".کاهش", "/کاهش"} and len(args) >= 3 and args[0] == "الماس":
+            if self.services is None:
+                await self._send(event, "سرویس اقتصاد در دسترس نیست.")
+                return
+            try:
+                amount = int(args[1])
+                if amount <= 0:
+                    raise ValidationError("مقدار باید مثبت باشد")
+                target = args[2]
+                if str(target).startswith("@") and hasattr(self.telegram, "resolve_user_id"):
+                    target = await self.telegram.resolve_user_id(str(target), account_id=account_id)
+                balance = self.services.economy.adjust(owner_id, str(target), -amount, reason=" ".join(args[3:]) or "admin debit")
+                await self._send(event, f"✅ {amount:,} الماس کم شد. موجودی جدید: {balance:,}")
+            except (ValueError, ValidationError, AuthorizationError, NotFoundError) as exc:
+                await self._send(event, f"❌ کاهش الماس انجام نشد: {exc}")
             return
 
         if command == "/ping":

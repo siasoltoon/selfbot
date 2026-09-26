@@ -8,6 +8,16 @@ from dataclasses import dataclass
 from .errors import ConfigurationError
 
 
+def _int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value.strip())
+    except ValueError as exc:
+        raise ConfigurationError(f"{name} must be an integer") from exc
+
+
 def _bool_env(name: str, default: bool = False) -> bool:
     value = os.getenv(name)
     if value is None:
@@ -36,6 +46,13 @@ class Settings:
     telegram_session_is_string: bool = True
     telegram_onboarding_bot_token: str | None = None
     telegram_session_encryption_key: str | None = None
+    diamond_min_transfer: int = 1
+    diamond_max_transfer: int = 1000
+    diamond_daily_transfer_limit: int = 3000
+    diamond_fee_bps: int = 100
+    diamond_min_fee: int = 1
+    diamond_max_fee: int = 100
+    diamond_max_admin_adjustment: int = 100000
 
 
 def load_settings() -> Settings:
@@ -63,6 +80,24 @@ def load_settings() -> Settings:
     if worker_enabled and not worker_token:
         raise ConfigurationError("PC_WORKER_TOKEN is required when PC_WORKER_ENABLED=true")
 
+    diamond_min_transfer = _int_env("DIAMOND_MIN_TRANSFER", 1)
+    diamond_max_transfer = _int_env("DIAMOND_MAX_TRANSFER", 1000)
+    diamond_daily_transfer_limit = _int_env("DIAMOND_DAILY_TRANSFER_LIMIT", 3000)
+    diamond_fee_bps = _int_env("DIAMOND_FEE_BPS", 100)
+    diamond_min_fee = _int_env("DIAMOND_MIN_FEE", 1)
+    diamond_max_fee = _int_env("DIAMOND_MAX_FEE", 100)
+    diamond_max_admin_adjustment = _int_env("DIAMOND_MAX_ADMIN_ADJUSTMENT", 100000)
+    if diamond_min_transfer < 1 or diamond_max_transfer < diamond_min_transfer:
+        raise ConfigurationError("diamond transfer range is invalid")
+    if diamond_daily_transfer_limit < diamond_max_transfer:
+        raise ConfigurationError("diamond daily transfer limit must cover max transfer")
+    if not 0 <= diamond_fee_bps <= 10000:
+        raise ConfigurationError("DIAMOND_FEE_BPS must be between 0 and 10000")
+    if diamond_min_fee < 0 or diamond_max_fee < diamond_min_fee:
+        raise ConfigurationError("diamond fee range is invalid")
+    if diamond_max_admin_adjustment < 1:
+        raise ConfigurationError("DIAMOND_MAX_ADMIN_ADJUSTMENT must be positive")
+
     return Settings(
         environment=environment,
         log_level=log_level,
@@ -78,4 +113,11 @@ def load_settings() -> Settings:
         owner_id=owner_id,
         telegram_onboarding_bot_token=os.getenv("TELEGRAM_ONBOARDING_BOT_TOKEN") or None,
         telegram_session_encryption_key=os.getenv("TELEGRAM_SESSION_ENCRYPTION_KEY") or None,
+        diamond_min_transfer=diamond_min_transfer,
+        diamond_max_transfer=diamond_max_transfer,
+        diamond_daily_transfer_limit=diamond_daily_transfer_limit,
+        diamond_fee_bps=diamond_fee_bps,
+        diamond_min_fee=diamond_min_fee,
+        diamond_max_fee=diamond_max_fee,
+        diamond_max_admin_adjustment=diamond_max_admin_adjustment,
     )

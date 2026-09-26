@@ -108,3 +108,42 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
     assert "Selfbot Control Center" in text
     assert sum(len(row) for row in kwargs["buttons"]) >= 6
     db.engine.dispose()
+
+
+def test_router_supports_balance_and_transfer_commands(tmp_path):
+    from selfbot.economy import EconomyService
+
+    db = Database(f"sqlite:///{tmp_path / 'router-economy.db'}")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    capabilities.set_enabled("owner", "panel_diamond_transfer", True)
+
+    class Services:
+        def __init__(self):
+            self.capabilities = capabilities
+            self.economy = EconomyService(db, capabilities, owner_id="owner")
+    services = Services()
+
+    telegram = FakeTelegram()
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
+    router.start()
+
+    async def run():
+        services.economy.adjust("owner", "owner", 100)
+        await telegram.events.dispatch(EventEnvelope(
+            "telegram.new_message", "telegram.account.1",
+            {"text": ".موجودی", "telegram_account_id": "1", "outgoing": True},
+            actor_id="owner", chat_id="self",
+        ))
+        await telegram.events.dispatch(EventEnvelope(
+            "telegram.new_message", "telegram.account.1",
+            {"text": ".انتقال 50 200", "telegram_account_id": "1", "outgoing": True},
+            actor_id="owner", chat_id="self",
+        ))
+
+    asyncio.run(run())
+    assert "100" in telegram.sent[0][1]
+    assert "انتقال انجام شد" in telegram.sent[1][1]
+    assert services.economy.balance("owner") == 49
+    assert services.economy.balance("200") == 50
+    db.engine.dispose()
