@@ -201,7 +201,7 @@ class TelegramRuntimeRouter:
 
         if command in {".پینگ", "/پینگ", "/ping"}:
             if await self._require_capability(event, owner_id, "panel_ping"):
-                await self._send(event, "🏓 pong")
+                await self._send(event, "pong")
             return
         if command in {".وضعیت", "/وضعیت"}:
             if await self._require_capability(event, owner_id, "panel_utility_status"):
