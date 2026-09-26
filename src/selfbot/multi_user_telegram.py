@@ -934,8 +934,8 @@ class OnboardingBot:
                     current = self.capabilities.is_enabled(owner_id, target)
                     self.capabilities.set_enabled(owner_id, target, not current)
                     message = "قابلیت روشن شد." if not current else "قابلیت خاموش شد."
-                elif action not in {"home", "category", "cap"}: raise ValueError("unknown panel action")
-                page = "home" if action == "home" else f"{action}:{target}" if target else "home"
+                elif action not in {"home", "category", "cap", "system"}: raise ValueError("unknown panel action")
+                page = "home" if action == "home" else "system" if action == "system" else f"{action}:{target}" if target else "home"
                 text, buttons = self._panel_page(owner_id, page)
                 await event.edit(text, buttons=buttons)
                 await event.answer(message or "صفحه به‌روزرسانی شد.")
@@ -969,10 +969,33 @@ class OnboardingBot:
             enabled, total = self.panel.summary(owner_id)
             lines = ["🤖 Selfbot Control Center", "", "🟢 سیستم فعال", f"قابلیت‌های قابل مدیریت: {enabled}/{total} روشن", "", "یک بخش را انتخاب کن:"]
             for category in self.panel.categories():
-                ce, ct = self.panel.category_stats(owner_id, category.category_id); add(f"{category.title}  {ce}/{ct}", "category", category.category_id)
+                ce, ct = self.panel.category_stats(owner_id, category.category_id)
+                if category.category_id == "system":
+                    add(category.title, "system")
+                else:
+                    add(f"{category.title}  {ce}/{ct}", "category", category.category_id)
             if row: buttons.append(row)
             buttons.append([self._panel_button("📊 وضعیت کلی", token, "cap", "status")])
             return "\n".join(lines), buttons
+        if page == "system":
+            try:
+                account = self.store.get_connected(owner_id)
+                account_line = f"📱 اکانت متصل: {account.telegram_account_id}"
+            except NotFoundError:
+                account_line = "📱 اکانت متصل: ندارد"
+            lines = [
+                "👤 حساب و سیستم",
+                "",
+                account_line,
+                "🟢 Runtime اصلی فعال است",
+                "",
+                "از این بخش می‌توانی وضعیت حساب و سامانه را بررسی کنی.",
+            ]
+            buttons.append([self._panel_button("📊 وضعیت قابلیت‌ها", token, "cap", "status")])
+            buttons.append([self._panel_button("🛡 تنظیمات امنیتی", token, "category", "security")])
+            buttons.append([self._panel_button("🏠 منوی اصلی", token, "home")])
+            return "\n".join(lines), buttons
+
         if page.startswith("category:"):
             category_id = page.split(":", 1)[1]; category = self.panel.category(category_id)
             enabled, total = self.panel.category_stats(owner_id, category_id)
