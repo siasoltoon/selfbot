@@ -106,5 +106,5 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
     assert len(event.replies) == 1
     text, kwargs = event.replies[0]
     assert "Selfbot Control Center" in text
-    assert len(kwargs["buttons"]) >= 5
+    assert sum(len(row) for row in kwargs["buttons"]) >= 6
     db.engine.dispose()
