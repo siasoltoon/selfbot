@@ -19,17 +19,31 @@ class PanelCategory:
 
 
 PANEL_CATEGORIES: tuple[PanelCategory, ...] = (
-    PanelCategory("ai", "🤖 هوش مصنوعی و Agentها", "AI، Multi-Agent و مدیریت رفتار هوشمند", ("ai", "multi_agent")),
-    PanelCategory("memory", "🧠 حافظه", "حافظه بلندمدت و چرخه مدیریت آن", ("memory",)),
-    PanelCategory("voice", "🎙 صدا و رسانه", "STT، TTS و پردازش صوتی", ("voice",)),
-    PanelCategory("web", "🌐 Web Intelligence", "جست‌وجو، دریافت و تحقیق وب", ("web",)),
-    PanelCategory("media", "🖼 OCR و اسناد", "OCR تصویر، PDF و دست‌خط", ("ocr",)),
-    PanelCategory("automation", "⚙️ اتوماسیون و Tasks", "Automation، Reminders، Queue و Scheduler", ("automation", "reminders", "tasks")),
-    PanelCategory("plugins", "🧩 Plugins", "افزونه‌ها و مدیریت چرخه عمر آن‌ها", ("plugins",)),
-    PanelCategory("worker", "🖥 PC Worker", "پردازش سنگین، رسانه و فایل", ("worker",)),
-    PanelCategory("data", "💾 داده و Backup", "Backup، Restore و Export", ("backup",)),
-    PanelCategory("analytics", "📊 Analytics و Learning", "تحلیل، خطا، عملکرد و یادگیری کنترل‌شده", ("analytics", "learning")),
-    PanelCategory("security", "🛡 امنیت", "Permissions، Audit و Emergency Lockdown", ("security",)),
+    PanelCategory("myoi_core", "🐱 بازی میویی", "قابلیت‌های اصلی حساب و بازی میویی", (
+        "panel_diamond_transfer", "panel_personal_assistant", "panel_self_management",
+        "panel_utility", "panel_calculator", "panel_ping", "panel_information",
+        "panel_premium_clock", "panel_profile_photo", "panel_identity_clock",
+        "panel_online_mode", "panel_action_mode",
+    )),
+    PanelCategory("myoi_auto", "🤖 خودکارهای میویی", "اتوماسیون پیشی، میو، انتقال، رولت، ماهی‌گیری، کارخانه، نجات، سرقت و آشپز", (
+        "panel_auto_cat", "panel_auto_meow", "panel_auto_transfer", "panel_auto_roulette",
+        "panel_auto_fishing", "panel_auto_factory", "panel_auto_rescue",
+        "panel_auto_robbery", "panel_auto_cook",
+    )),
+    PanelCategory("security", "🛡 دشمن و امنیت", "کنترل دشمن، بلاک، قفل پیوی، عدم حضور، منشی، عضویت اجباری، سکوت و فیلتر", (
+        "panel_enemy", "panel_block", "panel_private_lock", "panel_absence",
+        "panel_secretary", "panel_forced_join", "panel_mute", "panel_word_filter",
+    )),
+    PanelCategory("content", "💬 محتوا و تعامل", "محتوا، پاسخ خودکار، تگ، مدیریت گروه، نگهبان، سین، ری‌اکشن، کامنت، اسپم، سندر و تبچی", (
+        "panel_content", "panel_auto_reply", "panel_tag_members", "panel_group_management",
+        "panel_chat_guard", "panel_auto_read", "panel_auto_reaction",
+        "panel_first_comment", "panel_spam", "panel_sender", "panel_tabchi",
+    )),
+    PanelCategory("tools", "🧰 ابزارها", "ترجمه، دانلود، ارز، حذف پیام، بازی، ویس، TTS، ایموجی، استارزی و کیفیت عکس", (
+        "panel_translate", "panel_downloader", "panel_currency", "panel_delete",
+        "panel_games", "panel_voice_search", "panel_tts", "panel_premium_emoji",
+        "panel_stars_challenge", "panel_image_quality",
+    )),
     PanelCategory("system", "👤 حساب و سیستم", "حساب متصل، وضعیت سرویس و کنترل‌های عمومی", ()),
 )
 
