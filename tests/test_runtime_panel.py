@@ -147,3 +147,66 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
     assert services.economy.balance("owner") == 49
     assert services.economy.balance("200") == 50
     db.engine.dispose()
+
+def test_real_panel_capabilities_execute_only_when_enabled(tmp_path):
+    from types import SimpleNamespace
+    from selfbot.tasks import TaskManager
+
+    db = Database(f"sqlite:///{tmp_path / 'panel.db'}")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    services = SimpleNamespace(capabilities=capabilities, tasks=TaskManager(db))
+    telegram = FakeTelegram()
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
+    router.start()
+
+    async def dispatch(text):
+        await telegram.events.dispatch(EventEnvelope(
+            "telegram.new_message", "telegram.account.1",
+            {"text": text, "telegram_account_id": "1", "outgoing": True},
+            actor_id="owner", chat_id="self",
+        ))
+
+    async def run():
+        await dispatch(".3 + 5 * 2")
+        capabilities.set_enabled("owner", "panel_calculator", True)
+        await dispatch(".3 + 5 * 2")
+        capabilities.set_enabled("owner", "panel_ping", True)
+        await dispatch(".پینگ")
+        capabilities.set_enabled("owner", "panel_utility_today", True)
+        await dispatch(".امروز")
+        capabilities.set_enabled("owner", "panel_utility_id", True)
+        await dispatch(".ایدی")
+
+    asyncio.run(run())
+    assert "خاموش" in telegram.sent[0][1]
+    assert "🧮 13" in telegram.sent[1][1]
+    assert "pong" in telegram.sent[2][1]
+    assert "📅" in telegram.sent[3][1]
+    assert "owner" in telegram.sent[4][1]
+    db.engine.dispose()
+
+
+def test_cancel_capability_cancels_owner_tasks(tmp_path):
+    from types import SimpleNamespace
+    from selfbot.tasks import TaskManager
+
+    db = Database(f"sqlite:///{tmp_path / 'cancel.db'}")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    capabilities.set_enabled("owner", "panel_utility_cancel", True)
+    tasks = TaskManager(db)
+    task_id = tasks.create("test", owner_id="owner")
+    services = SimpleNamespace(capabilities=capabilities, tasks=tasks)
+    telegram = FakeTelegram()
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
+    router.start()
+
+    asyncio.run(telegram.events.dispatch(EventEnvelope(
+        "telegram.new_message", "telegram.account.1",
+        {"text": ".کنسل", "telegram_account_id": "1", "outgoing": True},
+        actor_id="owner", chat_id="self",
+    )))
+    assert "1 عملیات لغو شد" in telegram.sent[0][1]
+    assert tasks.get(task_id).status == "cancelled"
+    db.engine.dispose()

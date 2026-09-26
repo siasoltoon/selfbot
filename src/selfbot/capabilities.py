@@ -312,6 +312,9 @@ class CapabilityService:
         state = dict(record.state)
         enabled_state = dict(state.get("enabled", {}))
         enabled_state[definition.capability_id] = bool(enabled)
+        if enabled and definition.parent_id:
+            parent = self.definition(definition.parent_id)
+            enabled_state[parent.capability_id] = True
         if not enabled:
             for child in self.children(definition.capability_id):
                 enabled_state[child.capability_id] = False
