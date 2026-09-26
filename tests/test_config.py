@@ -59,8 +59,11 @@ def test_invalid_database_scheme(monkeypatch):
         raise AssertionError("expected ConfigurationError")
 
 
-
 def test_sqlserver_database_scheme_is_allowed(monkeypatch):
-    monkeypatch.setenv("DATABASE_URL", "mssql+pyodbc://user:password@db.example:1433/selfbot?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes")
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "mssql+pyodbc://user:password@db.example:1433/selfbot"
+        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes",
+    )
     settings = load_settings()
     assert settings.database_url.startswith("mssql+pyodbc://")
