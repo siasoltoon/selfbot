@@ -74,3 +74,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 3. Verify parent OFF cascades to children and child toggles persist after reopening the panel.
 4. Verify Account/System and Security pages.
 5. Continue wiring domain execution paths to capability gates and real providers.
+
+
+## 2026-09-26 — Internal Economy
+- PR #27 merged as 508472022e61577a1597d016012893b31a891c14.
+- Persistent wallet/ledger, transfer policy, admin adjustment, history, Telegram commands, migration 0004 and recipient resolution are implemented.
+- Final CI passed on Python 3.11 and 3.12.
+- Real database/Telegram runtime verification remains pending.
