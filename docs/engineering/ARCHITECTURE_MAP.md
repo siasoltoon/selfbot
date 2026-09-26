@@ -79,3 +79,14 @@ Telegram event -> RuntimeRouter -> EconomyService -> DiamondWallet/DiamondTransa
 - User operations are capability-gated in the Selfbot owner scope.
 - Admin adjustments are owner-authorized and ledger-recorded.
 - Balance changes are performed together with the ledger entry inside one database session.
+
+
+## Real Panel Execution
+Telegram event -> RuntimeRouter -> CapabilityService gate -> concrete core operation -> Telegram response.
+- Panel state remains durable and owner-scoped.
+- Capability child enablement now activates its parent module so UI actions are effective.
+
+## Myoi Adapter
+Linked Telethon user client -> MyoiTelegramAdapter -> @MeowieeeQBot messages/visible inline buttons.
+- Adapter is intentionally transport-focused and does not hardcode undocumented callback data.
+- Workflow services will consume this adapter after real observations establish stable labels/flows.

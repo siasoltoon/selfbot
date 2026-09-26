@@ -74,3 +74,8 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Capability-panel UX hardening completed in code and CI.
 - Remaining evidence is operator-side Telegram navigation plus domain gate/provider integration.
 \n\n## Phase 6 — Internal Economy update — 2026-09-26\n- Diamond economy core upgraded from generic/core placeholder status to a real persistent wallet + ledger implementation.\n- Migration 0004 creates diamond_wallets and diamond_transactions with non-negative/positive amount database constraints and indexes.\n- User transfer path implements owner-scoped capability gating, atomic balance mutation, fee accounting, daily sent-volume enforcement and self-transfer rejection.\n- Admin mint/burn path is owner-authorized, bounded and ledger-audited.\n- CI PR #27: PASS on Python 3.11/3.12.\n- Remaining: real PostgreSQL migration/runtime smoke test and real Telegram command exercise.\n
+
+## 2026-09-26 — Panel/Myoi Execution Update
+- Panel v2 catalog is no longer only UI metadata: core utility/calculator capabilities have real runtime handlers and capability gates.
+- Myoi integration now has a dedicated real Telegram adapter for @MeowieeeQBot.
+- Remaining Myoi implementation is evidence-driven: observe actual bot messages/buttons first, then add workflow-specific services and tests.

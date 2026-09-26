@@ -81,3 +81,13 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Persistent wallet/ledger, transfer policy, admin adjustment, history, Telegram commands, migration 0004 and recipient resolution are implemented.
 - Final CI passed on Python 3.11 and 3.12.
 - Real database/Telegram runtime verification remains pending.
+
+
+## 2026-09-26 — Panel Execution
+- Completed PR #29: real execution for core utility/calculator capability gates.
+- Regression: legacy /ping behavior preserved when the capability service is absent.
+
+## 2026-09-26 — Myoi Adapter
+- Completed PR #30: real Telegram transport adapter for @MeowieeeQBot.
+- Adapter operates on visible Telegram messages/buttons rather than invented callback/API contracts.
+- Next task: capture real Myoi bot observations with a linked account, then implement one workflow end-to-end with recorded evidence before expanding to the remaining Myoi modules.
