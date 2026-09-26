@@ -68,3 +68,8 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - CI final feature head c74a5a8194931a24807d35da19375346a92d610c: PASS on Python 3.11/3.12.
 - Tests cover durable owner-scoped capability state, fail-closed gates, authenticated panel tokens, outgoing /پنل routing in Saved Messages/groups, and rejection of incoming group control messages.
 - External verification remains for Telegram Inline Mode setup and real interactive button toggles.
+
+
+## 2026-09-26 Panel v2
+- Capability-panel UX hardening completed in code and CI.
+- Remaining evidence is operator-side Telegram navigation plus domain gate/provider integration.
