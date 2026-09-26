@@ -993,7 +993,10 @@ class OnboardingBot:
             enabled = snapshot[item.capability_id]; children = self.panel.children(capability_id)
             marker = "🟢 فعال" if enabled else "⚪ خاموش"; lines = [item.title, "", item.description, f"وضعیت: {marker}"]
             if children:
-                lines.extend(["", "زیرقابلیت‌ها:"]); lines.extend([f"{'🟢' if snapshot[x.capability_id] else '⚪'} {x.title}" for x in children])
+                lines.extend(["", "زیرقابلیت‌ها:"])
+                for child in children:
+                    child_marker = "🟢" if snapshot[child.capability_id] else "⚪"
+                    lines.append(f"{child_marker} {child.title}")
             if item.toggleable: add("🔴 خاموش کردن" if enabled else "🟢 روشن کردن", "toggle", capability_id)
             else: lines.extend(["", "🔒 این بخش هسته‌ای است و خاموش‌شدنی نیست."])
             for child in children: add(f"{'🟢' if snapshot[child.capability_id] else '⚪'} {child.title}", "cap", child.capability_id)
