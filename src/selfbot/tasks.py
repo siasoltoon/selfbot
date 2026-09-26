@@ -131,6 +131,21 @@ class TaskManager:
             result=None,
         )
 
+
+    def cancel_for_owner(self, owner_id: str) -> int:
+        if not owner_id.strip():
+            raise ValidationError("owner_id must not be empty")
+        with self.database.session() as session:
+            result = session.execute(
+                update(TaskRecord)
+                .where(
+                    TaskRecord.owner_id == owner_id,
+                    TaskRecord.status.in_((TaskStatus.QUEUED.value, TaskStatus.RUNNING.value)),
+                )
+                .values(status=TaskStatus.CANCELLED.value, updated_at=datetime.now(timezone.utc))
+            )
+            return int(result.rowcount or 0)
+
     def _transition(
         self,
         task_id: str,
