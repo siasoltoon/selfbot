@@ -106,3 +106,12 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added .موجودی, .انتقال, .تاریخچه, .افزایش الماس and .کاهش الماس.
 - Added Telegram username/reply recipient resolution and focused regression tests.
 - PR #27 merged to main as 508472022e61577a1597d016012893b31a891c14 with Python 3.11/3.12 CI green.
+
+
+## 2026-09-26 — Real Panel Execution
+- PR #29 merged: calculator, ping, status/date/ID and task cancellation now execute behind real capability gates.
+
+## 2026-09-26 — Myoi Adapter
+- PR #30 merged: added real Telethon adapter for @MeowieeeQBot with command sending and visible-button observation/clicking.
+- Added configurable MYOI_BOT_USERNAME with safe default MeowieeeQBot.
+- No undocumented Myoi workflow behavior was fabricated.
