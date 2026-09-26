@@ -63,3 +63,10 @@ Linked user account outgoing message
 The linked-account runtime deliberately ignores incoming group commands for control operations. This prevents other group members from controlling the owner's selfbot. The onboarding bot owns inline callbacks because Telegram/Telethon callback buttons are bot-side interactions; the linked user account only requests and sends the inline result into the target chat.
 
 Capability state is persisted per onboarding owner in the existing domain_state table, avoiding a duplicate settings database. Security and task/scheduler are core protections and are not user-disableable.
+
+
+## Telegram Panel v2
+- Linked user emits /panel or /پنل.
+- Runtime performs signed inline query against onboarding bot.
+- Onboarding bot renders hierarchical PanelService pages and handles authenticated callback navigation.
+- PanelService owns transport-neutral category/navigation metadata; CapabilityService owns durable owner-scoped state and parent/child gate semantics.
