@@ -125,7 +125,7 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
     services = Services()
 
     telegram = FakeTelegram()
-    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=Services())
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
     router.start()
 
     async def run():
