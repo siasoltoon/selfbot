@@ -83,3 +83,13 @@ A phase remains non-final until its required evidence is recorded.
 - Final Python 3.11 and 3.12 checks passed; compileall passed on both.
 - Focused tests cover fees, limits, self-transfer, insufficient balance, admin authorization, non-negative balances and Telegram balance/transfer routing.
 - Real PostgreSQL and real Telegram transaction execution remain NOT_RUN.
+
+
+## 2026-09-26 — Panel Runtime
+- PR #29 final CI: Python 3.11 PASS, Python 3.12 PASS, all four workflow checks green.
+- Tests cover disabled/enabled calculator, ping, today, ID and owner-wide cancellation behavior.
+
+## 2026-09-26 — Myoi Adapter
+- PR #30 final CI: Python 3.11 PASS and Python 3.12 PASS across all four checks.
+- Tests cover real adapter boundaries with a fake Telethon-like client: bot resolution, command sending, visible button discovery and click.
+- Live @MeowieeeQBot observation has NOT yet been claimed PASS.
