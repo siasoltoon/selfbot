@@ -66,6 +66,11 @@ def test_router_ignores_incoming_group_command():
 
 def test_onboarding_bot_panel_command_replies_with_real_buttons():
     from selfbot.multi_user_telegram import OnboardingBot
+    from selfbot.panel import PanelService
+
+    db = Database("sqlite+pysqlite:///:memory:")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
 
     class FakeStore:
         def get_connected(self, owner_id):
@@ -80,19 +85,6 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
         def _safe_exception_message(exc):
             return str(exc)
 
-    class Capability:
-        capability_id = "ai"
-        title = "AI"
-        description = "دستیار هوش مصنوعی"
-        toggleable = True
-
-    class FakeCapabilities:
-        def snapshot(self, owner_id):
-            return {"ai": True}
-
-        def definitions(self):
-            return [Capability()]
-
     class Event:
         def __init__(self):
             self.replies = []
@@ -103,7 +95,8 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
     bot = OnboardingBot.__new__(OnboardingBot)
     bot.auth = FakeAuth()
     bot.store = FakeStore()
-    bot.capabilities = FakeCapabilities()
+    bot.capabilities = capabilities
+    bot.panel = PanelService(capabilities)
     bot.panel_token_factory = lambda owner_id: "signed-token"
     bot.logger = type("Logger", (), {"warning": staticmethod(lambda *args, **kwargs: None)})()
 
@@ -112,57 +105,6 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
 
     assert len(event.replies) == 1
     text, kwargs = event.replies[0]
-    assert "پنل مدیریت Selfbot" in text
-    assert kwargs["buttons"]
-
-
-def test_onboarding_bot_panel_command_replies_with_real_buttons():
-    from selfbot.multi_user_telegram import OnboardingBot
-
-    class FakeStore:
-        def get_connected(self, owner_id):
-            return object()
-
-    class FakeAuth:
-        @staticmethod
-        def _owner_fingerprint(owner_id):
-            return "fingerprint"
-
-        @staticmethod
-        def _safe_exception_message(exc):
-            return str(exc)
-
-    class Capability:
-        capability_id = "ai"
-        title = "AI"
-        description = "دستیار هوش مصنوعی"
-        toggleable = True
-
-    class FakeCapabilities:
-        def snapshot(self, owner_id):
-            return {"ai": True}
-
-        def definitions(self):
-            return [Capability()]
-
-    class Event:
-        def __init__(self):
-            self.replies = []
-
-        async def reply(self, text, **kwargs):
-            self.replies.append((text, kwargs))
-
-    bot = OnboardingBot.__new__(OnboardingBot)
-    bot.auth = FakeAuth()
-    bot.store = FakeStore()
-    bot.capabilities = FakeCapabilities()
-    bot.panel_token_factory = lambda owner_id: "signed-token"
-    bot.logger = type("Logger", (), {"warning": staticmethod(lambda *args, **kwargs: None)})()
-
-    event = Event()
-    asyncio.run(bot._handle("owner", event, "/پنل"))
-
-    assert len(event.replies) == 1
-    text, kwargs = event.replies[0]
-    assert "پنل مدیریت Selfbot" in text
-    assert kwargs["buttons"]
+    assert "Selfbot Control Center" in text
+    assert len(kwargs["buttons"]) >= 5
+    db.engine.dispose()
