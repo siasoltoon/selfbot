@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 
 from scripts import myoi_live_probe
 
@@ -47,14 +46,9 @@ class FakeClient:
     async def get_me(self):
         return FakeEntity(126, "owner")
 
-    async def get_entity(self, username):
-        return FakeEntity(999, username, False)
-
-    def iter_dialogs(self):
-        async def gen():
-            yield FakeDialog(FakeEntity(10, "Myoi Group"))
-            yield FakeDialog(FakeEntity(11, "Private", False))
-        return gen()
+    async def iter_dialogs(self):
+        yield FakeDialog(FakeEntity(10, "Myoi Group"))
+        yield FakeDialog(FakeEntity(11, "Private", False))
 
     def iter_messages(self, entity, limit, from_user):
         async def gen():
@@ -71,19 +65,24 @@ def test_message_view_is_read_only_metadata():
 
 def test_probe_does_not_send_or_click(monkeypatch):
     fake = FakeClient()
+    monkeypatch.setattr(myoi_live_probe, "_build_client", lambda api_id, api_hash, session: fake)
+    monkeypatch.setattr(
+        myoi_live_probe,
+        "MyoiTelegramAdapter",
+        lambda client, bot_username: type(
+            "Adapter",
+            (),
+            {"_entity": lambda self: asyncio.sleep(0, result=FakeEntity(999, bot_username, False))},
+        )(),
+    )
+    monkeypatch.setenv("TELEGRAM_API_ID", "123")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "hash")
+    monkeypatch.setenv("TELEGRAM_SESSION", "session")
 
-    class FakeTelegramClient:
-        def __new__(cls, *args, **kwargs):
-            return fake
-
-    monkeypatch.setitem(__import__("sys").modules, "telethon", type("Telethon", (), {"TelegramClient": FakeTelegramClient, "sessions": type("S", (), {"StringSession": object})})())
-    monkeypatch.setattr(myoi_live_probe, "MyoiTelegramAdapter", lambda client, bot_username: type("A", (), {"_entity": lambda self: asyncio.sleep(0, result=FakeEntity(999, bot_username))})())
-
-    result = asyncio.run(_run_probe())
+    result = asyncio.run(myoi_live_probe.probe())
     assert result["safety"]["commands_sent"] == 0
     assert result["safety"]["buttons_clicked"] == 0
+    assert result["safety"]["state_changing_actions"] == 0
     assert result["groups"][0]["title"] == "Myoi Group"
-
-
-async def _run_probe():
-    return await myoi_live_probe.probe()
+    assert result["groups"][0]["messages"][0]["buttons"][0]["text"] == "ماهی‌گیری"
+    assert fake.disconnected is True
