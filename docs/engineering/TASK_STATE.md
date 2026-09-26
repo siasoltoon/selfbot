@@ -58,3 +58,19 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Fixed on PR #24 and merged as `71ed0106956e1e4d46fa47af9b2949c3e587b703`.
 - Added regression coverage for onboarding-bot panel replies with inline buttons.
 - Next: restart the Telegram runtime from current `main` and perform real Saved Messages, onboarding-bot, private-chat, and group verification.
+
+
+## 2026-09-26 — Professional Panel v2
+- User validation showed the previous panel was too flat and limited to master ON/OFF switches.
+- Implemented PR #25: hierarchical Control Center with category → module → sub-capability navigation, durable parent/child state, global status, and Account/System section.
+- Expanded the capability model to cover AI, Memory, Voice, Web, Plugins, PC Worker, Automation, Reminders, Tasks, Backup, Analytics, Learning, Multi-Agent, OCR, and Security sub-capabilities.
+- PR #25 merged to main as d504af985246efa1480b73182b17c790a56bc175.
+- Branch CI run 36266208463 passed on Python 3.11 and 3.12.
+- Important limitation: panel controls are durable and enforceable through CapabilityService.require(), but individual domain execution paths still require their own gate wiring/provider verification before being considered fully operational.
+
+## Next Task
+1. Restart Telegram Runtime from merged main d504af985246efa1480b73182b17c790a56bc175.
+2. Open /پنل and verify Main Menu → category → module → sub-capability navigation.
+3. Verify parent OFF cascades to children and child toggles persist after reopening the panel.
+4. Verify Account/System and Security pages.
+5. Continue wiring domain execution paths to capability gates and real providers.
