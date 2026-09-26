@@ -26,7 +26,7 @@ def test_router_opens_panel_for_outgoing_saved_message_and_group_command():
     class Services:
         capabilities = CapabilityService(DomainStore(db))
     telegram = FakeTelegram()
-    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=Services())
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
     router.start()
 
     async def run():
@@ -119,8 +119,10 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
     capabilities.set_enabled("owner", "panel_diamond_transfer", True)
 
     class Services:
-        capabilities = capabilities
-        economy = EconomyService(db, capabilities, owner_id="owner")
+        def __init__(self):
+            self.capabilities = capabilities
+            self.economy = EconomyService(db, capabilities, owner_id="owner")
+    services = Services()
 
     telegram = FakeTelegram()
     router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=Services())
@@ -132,7 +134,7 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
             {"text": ".موجودی", "telegram_account_id": "1", "outgoing": True},
             actor_id="owner", chat_id="self",
         ))
-        Services.economy.adjust("owner", "owner", 100)
+        services.economy.adjust("owner", "owner", 100)
         await telegram.events.dispatch(EventEnvelope(
             "telegram.new_message", "telegram.account.1",
             {"text": ".انتقال 50 200", "telegram_account_id": "1", "outgoing": True},
@@ -142,6 +144,6 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
     asyncio.run(run())
     assert "100" in telegram.sent[0][1]
     assert "انتقال انجام شد" in telegram.sent[1][1]
-    assert Services.economy.balance("owner") == 49
-    assert Services.economy.balance("200") == 50
+    assert services.economy.balance("owner") == 49
+    assert services.economy.balance("200") == 50
     db.engine.dispose()
