@@ -220,7 +220,8 @@ class TelegramRuntimeRouter:
             return
         if command in {".کنسل", "/کنسل"}:
             if await self._require_capability(event, owner_id, "panel_utility_cancel"):
-                await self._send(event, "🛑 درخواست لغو ثبت شد.")
+                cancelled = self.services.tasks.cancel_for_owner(owner_id)
+                await self._send(event, f"🛑 {cancelled} عملیات لغو شد.")
             return
         if text.startswith(".") and command not in {".موجودی", ".تاریخچه", ".تاریخچه_تراکنش", ".انتقال", ".افزایش", ".کاهش"}:
             expression = text[1:].strip()
