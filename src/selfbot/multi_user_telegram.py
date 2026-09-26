@@ -26,6 +26,7 @@ from .events import EventEnvelope, EventRouter
 from .logging import get_logger
 from .multi_user_models import TelegramAccount
 from .multi_user_security import SessionCipher
+from .panel import PanelService
 
 
 class AuthClient(Protocol):
@@ -868,6 +869,7 @@ class OnboardingBot:
         self.store = store
         self.capabilities = capabilities
         self.panel_token_factory = panel_token_factory
+        self.panel = PanelService(capabilities) if capabilities is not None else None
         self._client: Any = None
         self.username: str | None = None
         self._started = False
@@ -899,116 +901,135 @@ class OnboardingBot:
 
         @self._client.on(events.InlineQuery)
         async def on_inline_query(event: Any) -> None:
-            if self.capabilities is None or self.panel_token_factory is None:
-                await event.answer([], cache_time=0)
-                return
+            if self.capabilities is None or self.panel_token_factory is None or self.panel is None:
+                await event.answer([], cache_time=0); return
             token = (getattr(event, "text", "") or "").strip()
-            if not token.startswith("panel:"):
-                await event.answer([], cache_time=0)
-                return
+            if not token.startswith("panel:"): await event.answer([], cache_time=0); return
             owner_id = self._verify_panel_token(token[6:])
-            if owner_id is None:
-                await event.answer([], cache_time=0)
-                return
+            if owner_id is None: await event.answer([], cache_time=0); return
             try:
-                record = self.store.get_connected(owner_id)
-                text, buttons = self._panel_view(owner_id)
-                result = await event.builder.article(
-                    "🤖 Selfbot Panel",
-                    text=text,
-                    buttons=buttons,
-                )
+                self.store.get_connected(owner_id)
+                text, buttons = self._panel_page(owner_id, "home")
+                result = await event.builder.article("🤖 Selfbot Control Center", text=text, buttons=buttons)
                 await event.answer([result], cache_time=0, private=True)
-                self.logger.info(
-                    "telegram capability panel served",
-                    extra={"context": {"owner_fingerprint": self.auth._owner_fingerprint(owner_id)}},
-                )
-                _ = record
             except Exception as exc:
-                self.logger.warning(
-                    "telegram capability panel failed",
-                    extra={"context": {
-                        "stage": "inline_panel",
-                        "exception_type": type(exc).__name__,
-                        "error_message": self.auth._safe_exception_message(exc),
-                    }},
-                )
+                self.logger.warning("telegram capability panel failed", extra={"context": {"stage": "inline_panel", "exception_type": type(exc).__name__, "error_message": self.auth._safe_exception_message(exc)}})
                 await event.answer([], cache_time=0)
 
         @self._client.on(events.CallbackQuery)
         async def on_callback(event: Any) -> None:
             data = bytes(getattr(event, "data", b"") or b"").decode("utf-8", "ignore")
-            if not data.startswith("panel|"):
-                return
-            parts = data.split("|", 2)
-            if len(parts) != 3:
-                await event.answer("درخواست نامعتبر است.", alert=True)
-                return
+            if not data.startswith("panel|"): return
+            parts = data.split("|", 3)
+            if len(parts) < 3: await event.answer("درخواست نامعتبر است.", alert=True); return
             owner_id = self._verify_panel_token(parts[1])
-            if owner_id is None:
-                await event.answer("نشست پنل معتبر نیست.", alert=True)
-                return
+            if owner_id is None: await event.answer("نشست پنل معتبر نیست.", alert=True); return
             sender = str(getattr(event, "sender_id", "") or "")
-            if sender != owner_id:
-                await event.answer("این پنل متعلق به شما نیست.", alert=True)
-                return
-            capability_id = parts[2]
+            if sender != owner_id: await event.answer("این پنل متعلق به شما نیست.", alert=True); return
+            action = parts[2]; target = parts[3] if len(parts) == 4 else None
             try:
-                current = self.capabilities.is_enabled(owner_id, capability_id)
-                self.capabilities.set_enabled(owner_id, capability_id, not current)
-                text, buttons = self._panel_view(owner_id)
+                message = None
+                if action == "toggle":
+                    if target is None: raise ValueError("missing capability")
+                    current = self.capabilities.is_enabled(owner_id, target)
+                    self.capabilities.set_enabled(owner_id, target, not current)
+                    message = "قابلیت روشن شد." if not current else "قابلیت خاموش شد."
+                elif action not in {"home", "category", "cap", "system"}: raise ValueError("unknown panel action")
+                page = "home" if action == "home" else "system" if action == "system" else f"{action}:{target}" if target else "home"
+                text, buttons = self._panel_page(owner_id, page)
                 await event.edit(text, buttons=buttons)
-                await event.answer("تغییر ذخیره شد.")
-            except Exception as exc:
-                await event.answer(f"تغییر انجام نشد: {type(exc).__name__}", alert=True)
+                await event.answer(message or "صفحه به‌روزرسانی شد.")
+            except Exception as exc: await event.answer(f"عملیات انجام نشد: {type(exc).__name__}", alert=True)
 
         self._started = True
         self.logger.info("Telegram onboarding bot started")
 
     def _verify_panel_token(self, token: str) -> str | None:
-        if self.panel_token_factory is None:
-            return None
-        # The factory is intentionally one-way; verification is supplied by the
-        # paired signer through a dedicated attribute when configured.
+        if self.panel_token_factory is None: return None
         verifier = getattr(self, "_panel_token_verifier", None)
         return verifier(token) if verifier is not None else None
 
-    def configure_panel_security(
-        self,
-        token_factory: Callable[[str], str],
-        token_verifier: Callable[[str], str | None],
-    ) -> None:
-        self.panel_token_factory = token_factory
-        self._panel_token_verifier = token_verifier
+    def configure_panel_security(self, token_factory: Callable[[str], str], token_verifier: Callable[[str], str | None]) -> None:
+        self.panel_token_factory = token_factory; self._panel_token_verifier = token_verifier
 
-    def _panel_view(self, owner_id: str) -> tuple[str, list[list[Any]]]:
+    @staticmethod
+    def _panel_button(text: str, token: str, action: str, target: str | None = None) -> Any:
         from telethon import Button
-        snapshot = self.capabilities.snapshot(owner_id)
-        lines = [
-            "🤖 پنل مدیریت Selfbot",
-            "",
-            "🟢 روشن | ⚪ خاموش",
-            "با هر دکمه وضعیت همان قابلیت فوراً در دیتابیس ذخیره می‌شود.",
-            "",
-        ]
-        buttons = []
-        token = self.panel_token_factory(owner_id)
-        row = []
-        for item in self.capabilities.definitions():
-            enabled = snapshot[item.capability_id]
-            marker = "🟢" if enabled else "⚪"
-            lines.append(f"{marker} {item.title}: {item.description}")
-            if item.toggleable:
-                row.append(Button.inline(
-                    f"{marker} {item.title}",
-                    f"panel|{token}|{item.capability_id}",
-                ))
-                if len(row) == 2:
-                    buttons.append(row)
-                    row = []
-        if row:
-            buttons.append(row)
-        return "\n".join(lines), buttons
+        data = f"panel|{token}|{action}" + (f"|{target}" if target else "")
+        return Button.inline(text, data)
+
+    def _panel_page(self, owner_id: str, page: str) -> tuple[str, list[list[Any]]]:
+        if self.panel is None or self.panel_token_factory is None: raise DependencyError("panel service is not configured", retryable=False)
+        token = self.panel_token_factory(owner_id); snapshot = self.capabilities.snapshot(owner_id)
+        buttons: list[list[Any]] = []; row: list[Any] = []
+        def add(text: str, action: str, target: str | None = None) -> None:
+            nonlocal row; row.append(self._panel_button(text, token, action, target))
+            if len(row) == 2: buttons.append(row); row = []
+        if page == "home":
+            enabled, total = self.panel.summary(owner_id)
+            lines = ["🤖 Selfbot Control Center", "", "🟢 سیستم فعال", f"قابلیت‌های قابل مدیریت: {enabled}/{total} روشن", "", "یک بخش را انتخاب کن:"]
+            for category in self.panel.categories():
+                ce, ct = self.panel.category_stats(owner_id, category.category_id)
+                if category.category_id == "system":
+                    add(category.title, "system")
+                else:
+                    add(f"{category.title}  {ce}/{ct}", "category", category.category_id)
+            if row: buttons.append(row)
+            buttons.append([self._panel_button("📊 وضعیت کلی", token, "cap", "status")])
+            return "\n".join(lines), buttons
+        if page == "system":
+            try:
+                account = self.store.get_connected(owner_id)
+                account_line = f"📱 اکانت متصل: {account.telegram_account_id}"
+            except NotFoundError:
+                account_line = "📱 اکانت متصل: ندارد"
+            lines = [
+                "👤 حساب و سیستم",
+                "",
+                account_line,
+                "🟢 Runtime اصلی فعال است",
+                "",
+                "از این بخش می‌توانی وضعیت حساب و سامانه را بررسی کنی.",
+            ]
+            buttons.append([self._panel_button("📊 وضعیت قابلیت‌ها", token, "cap", "status")])
+            buttons.append([self._panel_button("🛡 تنظیمات امنیتی", token, "category", "security")])
+            buttons.append([self._panel_button("🏠 منوی اصلی", token, "home")])
+            return "\n".join(lines), buttons
+
+        if page.startswith("category:"):
+            category_id = page.split(":", 1)[1]; category = self.panel.category(category_id)
+            enabled, total = self.panel.category_stats(owner_id, category_id)
+            lines = [category.title, "", category.description, f"وضعیت: {enabled}/{total} قابلیت اصلی روشن", "", "ماژول را برای ورود به زیرمنو انتخاب کن:"]
+            for item in self.panel.roots(category_id):
+                marker = "🟢" if snapshot[item.capability_id] else "⚪"; children = self.panel.children(item.capability_id)
+                suffix = f" · {len(children)} زیرقابلیت" if children else ""; add(f"{marker} {item.title}{suffix}", "cap", item.capability_id)
+            if row: buttons.append(row)
+            buttons.append([self._panel_button("🏠 منوی اصلی", token, "home")])
+            return "\n".join(lines), buttons
+        if page == "cap:status":
+            lines = ["📊 وضعیت کلی Selfbot", ""]
+            for category in self.panel.categories():
+                enabled, total = self.panel.category_stats(owner_id, category.category_id); lines.append(f"{category.title}: {enabled}/{total}")
+            return "\n".join(lines), [[self._panel_button("🏠 منوی اصلی", token, "home")]]
+        if page.startswith("cap:"):
+            capability_id = page.split(":", 1)[1]; item = self.capabilities.definition(capability_id)
+            enabled = snapshot[item.capability_id]; children = self.panel.children(capability_id)
+            marker = "🟢 فعال" if enabled else "⚪ خاموش"; lines = [item.title, "", item.description, f"وضعیت: {marker}"]
+            if children:
+                lines.extend(["", "زیرقابلیت‌ها:"])
+                for child in children:
+                    child_marker = "🟢" if snapshot[child.capability_id] else "⚪"
+                    lines.append(f"{child_marker} {child.title}")
+            if item.toggleable: add("🔴 خاموش کردن" if enabled else "🟢 روشن کردن", "toggle", capability_id)
+            else: lines.extend(["", "🔒 این بخش هسته‌ای است و خاموش‌شدنی نیست."])
+            for child in children: add(f"{'🟢' if snapshot[child.capability_id] else '⚪'} {child.title}", "cap", child.capability_id)
+            if row: buttons.append(row)
+            back_action, back_target = ("category", item.category_id) if item.parent_id is None else ("cap", item.parent_id)
+            buttons.append([self._panel_button("↩️ بازگشت", token, back_action, back_target)])
+            return "\n".join(lines), buttons
+        raise ValidationError("unknown panel page")
+
+    def _panel_view(self, owner_id: str) -> tuple[str, list[list[Any]]]: return self._panel_page(owner_id, "home")
 
     async def _watch_qr(self, user_id: str, event: Any) -> None:
         try:
