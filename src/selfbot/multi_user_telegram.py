@@ -845,6 +845,13 @@ class MultiUserTelegramRuntime:
         self._panel_bot_username = bot_username.lstrip("@")
         self._panel_token_factory = token_factory
 
+    def myoi_adapter(self, account_id: str, *, bot_username: str = "MeowieeeQBot"):
+        client = self._clients.get(str(account_id))
+        if client is None:
+            raise NotFoundError("Telegram account runtime is not active")
+        from .myoi_adapter import MyoiTelegramAdapter
+        return MyoiTelegramAdapter(client, bot_username=bot_username)
+
     async def resolve_user_id(self, identifier: str, *, account_id: str | None = None) -> str:
         if not account_id:
             raise ValidationError("telegram account id is required")
