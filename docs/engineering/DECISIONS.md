@@ -88,3 +88,7 @@
 - @MeowieeeQBot is integrated through a dedicated Telegram adapter, separate from the internal diamond economy.
 - Do not invent callback data, hidden APIs, or game semantics. The adapter may inspect visible button labels and click the corresponding real Telegram button.
 - Specific Myoi workflows are implemented only after live observation and regression evidence.
+
+
+## 2026-09-27 — External Database Persistence
+- 2026-09-27: Keep external DB deployment-agnostic through `DATABASE_URL`; add SQL Server via `mssql+pyodbc` as an optional driver rather than coupling core logic to SQL Server. GitHub Actions must not expose SQL Server directly to the public internet; use a private network/VPN path for operator-hosted databases.
