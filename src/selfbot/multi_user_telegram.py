@@ -777,6 +777,21 @@ class MultiUserTelegramRuntime:
                     await result
                 raise
 
+    @staticmethod
+    async def _reply_user_id(message: Any) -> str | None:
+        getter = getattr(message, "get_reply_message", None)
+        if not callable(getter):
+            return None
+        try:
+            reply = getter()
+            if inspect.isawaitable(reply):
+                reply = await reply
+            sender = await reply.get_sender() if reply is not None and hasattr(reply, "get_sender") else None
+            value = str(getattr(sender, "id", "") or "") if sender is not None else ""
+            return value or None
+        except Exception:
+            return None
+
     def _handler(self, owner_user_id: str, account_id: str) -> Callable[[Any], Awaitable[None]]:
         async def handler(event: Any) -> None:
             message = getattr(event, "message", event)
@@ -794,6 +809,7 @@ class MultiUserTelegramRuntime:
                     "text": getattr(message, "message", None),
                     "telegram_account_id": account_id,
                     "outgoing": bool(getattr(message, "out", False)),
+                    "reply_to_user_id": await self._reply_user_id(message),
                 },
             ))
         return handler
@@ -828,6 +844,26 @@ class MultiUserTelegramRuntime:
             raise ValidationError("panel bot username is required")
         self._panel_bot_username = bot_username.lstrip("@")
         self._panel_token_factory = token_factory
+
+    async def resolve_user_id(self, identifier: str, *, account_id: str | None = None) -> str:
+        if not account_id:
+            raise ValidationError("telegram account id is required")
+        client = self._clients.get(account_id)
+        if client is None:
+            raise NotFoundError("Telegram account runtime is not active")
+        value = str(identifier).strip()
+        if not value:
+            raise ValidationError("user identifier is required")
+        if value.isdigit():
+            return value
+        try:
+            entity = await client.get_entity(value)
+        except Exception as exc:
+            raise NotFoundError("Telegram user was not found") from exc
+        user_id = str(getattr(entity, "id", "") or "")
+        if not user_id:
+            raise NotFoundError("Telegram user id is unavailable")
+        return user_id
 
     async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None) -> Any:
         if not account_id:
