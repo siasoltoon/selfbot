@@ -53,9 +53,11 @@ def test_requested_panel_children_are_durable_and_owner_scoped():
     owner = "owner-a"
     assert service.is_enabled(owner, "panel_personal_assistant") is False
     assert service.set_enabled(owner, "panel_personal_assistant", True) is True
-    assert service.is_enabled(owner, "panel_assistant_on") is True
+    assert service.is_enabled(owner, "panel_assistant_on") is False
     assert service.is_enabled("owner-b", "panel_assistant_on") is False
 
+    service.set_enabled(owner, "panel_assistant_on", True)
+    assert service.is_enabled(owner, "panel_assistant_on") is True
     service.set_enabled(owner, "panel_personal_assistant", False)
     assert service.is_enabled(owner, "panel_assistant_on") is False
     assert panel.children("panel_personal_assistant")
