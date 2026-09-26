@@ -93,3 +93,9 @@ A phase remains non-final until its required evidence is recorded.
 - PR #30 final CI: Python 3.11 PASS and Python 3.12 PASS across all four checks.
 - Tests cover real adapter boundaries with a fake Telethon-like client: bot resolution, command sending, visible button discovery and click.
 - Live @MeowieeeQBot observation has NOT yet been claimed PASS.
+
+
+## 2026-09-27 — External Database Persistence
+- PR #33 SQL Server persistence implementation: CI validation passed on Python 3.11 and 3.12 after fixing test-file newline encoding.
+- SQLite Alembic regression now verifies all durable tables, including Telegram accounts and diamond economy.
+- Real SQL Server migration/connectivity remains NOT_RUN until an operator-provided SQL Server endpoint is reachable.
