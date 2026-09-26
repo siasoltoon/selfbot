@@ -1,0 +1,60 @@
+name: Myoi Safe Live Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: myoi-safe-live-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      SELF_BOT_ENV: test
+      LOG_LEVEL: INFO
+      TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+      TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+      TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
+      MYOI_BOT_USERNAME: ${{ vars.MYOI_BOT_USERNAME || 'MeowieeeQBot' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runtime
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Validate required secrets
+        shell: pwsh
+        run: |
+          if (-not $env:TELEGRAM_API_ID) { throw "TELEGRAM_API_ID secret is missing." }
+          if (-not $env:TELEGRAM_API_HASH) { throw "TELEGRAM_API_HASH secret is missing." }
+          if (-not $env:TELEGRAM_SESSION) { throw "TELEGRAM_SESSION secret is missing." }
+
+      - name: Run read-only Myoi probe
+        shell: pwsh
+        run: |
+          python scripts/myoi_live_probe.py | Tee-Object -FilePath myoi-live-probe.json
+
+      - name: Upload probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: myoi-live-probe-evidence
+          path: myoi-live-probe.json
+          if-no-files-found: ignore
+          retention-days: 7
