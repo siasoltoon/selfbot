@@ -30,6 +30,7 @@ PANEL_CATEGORIES: tuple[PanelCategory, ...] = (
     PanelCategory("data", "💾 داده و Backup", "Backup، Restore و Export", ("backup",)),
     PanelCategory("analytics", "📊 Analytics و Learning", "تحلیل، خطا، عملکرد و یادگیری کنترل‌شده", ("analytics", "learning")),
     PanelCategory("security", "🛡 امنیت", "Permissions، Audit و Emergency Lockdown", ("security",)),
+    PanelCategory("system", "👤 حساب و سیستم", "حساب متصل، وضعیت سرویس و کنترل‌های عمومی", ()),
 )
 
 
