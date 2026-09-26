@@ -26,7 +26,7 @@ def test_router_opens_panel_for_outgoing_saved_message_and_group_command():
     class Services:
         capabilities = CapabilityService(DomainStore(db))
     telegram = FakeTelegram()
-    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=services)
+    router = TelegramRuntimeRouter(telegram, None, allow_linked_accounts=True, services=Services())
     router.start()
 
     async def run():
