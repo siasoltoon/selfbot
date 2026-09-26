@@ -70,3 +70,12 @@ Capability state is persisted per onboarding owner in the existing domain_state 
 - Runtime performs signed inline query against onboarding bot.
 - Onboarding bot renders hierarchical PanelService pages and handles authenticated callback navigation.
 - PanelService owns transport-neutral category/navigation metadata; CapabilityService owns durable owner-scoped state and parent/child gate semantics.
+
+
+## Internal Diamond Economy
+Telegram event -> RuntimeRouter -> EconomyService -> DiamondWallet/DiamondTransaction -> configured database.
+- EconomyService is independent of Myoi and accepts canonical user IDs.
+- Telegram adapter resolves @username and reply recipients before calling the core.
+- User operations are capability-gated in the Selfbot owner scope.
+- Admin adjustments are owner-authorized and ledger-recorded.
+- Balance changes are performed together with the ledger entry inside one database session.

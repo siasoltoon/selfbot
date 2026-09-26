@@ -76,3 +76,10 @@ A phase remains non-final until its required evidence is recorded.
 - Pytest — PASS on both versions; branch reached 81 passing tests.
 - New tests cover hierarchical categories, parent/child cascade behavior, core Security/Tasks invariants, and onboarding-bot panel rendering.
 - Real Telegram v2 UI interaction is NOT yet claimed PASS; runtime must be restarted from the merged main commit and operator must exercise the nested navigation.
+
+
+## Internal Economy — 2026-09-26
+- PR #27 initial CI exposed three failures; capability scope and a test fixture were corrected.
+- Final Python 3.11 and 3.12 checks passed; compileall passed on both.
+- Focused tests cover fees, limits, self-transfer, insufficient balance, admin authorization, non-negative balances and Telegram balance/transfer routing.
+- Real PostgreSQL and real Telegram transaction execution remain NOT_RUN.
