@@ -72,3 +72,10 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Main → category → module → sub-capability navigation is implemented with durable owner-scoped state.
 - Real Telegram UI verification of the nested panel remains pending.
 \n\n## 2026-09-26 — Internal Diamond Economy\n- PR #27 merged to main as 508472022e61577a1597d016012893b31a891c14.\n- Added persistent per-user DiamondWallet and append-only DiamondTransaction ledger.\n- Added atomic user-to-user transfer with self-transfer rejection, sufficient-balance validation, minimum/maximum transfer, daily transfer cap, and configurable fee.\n- Added owner-only admin credit/debit with bounded adjustment size, reason and ledger audit fields.\n- Added .موجودی, .انتقال, .تاریخچه and admin adjustment commands; username and reply recipients are resolved through the linked Telegram client.\n- Safe defaults: min 1, max 1,000, daily 3,000, fee 1% with min 1/max 100, admin adjustment max 100,000.\n- Added Alembic migration 0004 and environment overrides; no Myoi/external-bot balance is used.\n- CI for PR #27 passed on Python 3.11 and 3.12.\n- Economy code-side implementation is complete; real PostgreSQL/runtime Telegram transaction verification remains external evidence.\n
+
+## 2026-09-26 — Real Panel Execution + Myoi Adapter
+- PR #29 merged as 76bf9d32fcefc17f9cfa9bf42c09ff00a1e57822.
+- Panel capability gates now execute real core behaviors for calculator, ping, status, date/time, ID and owner task cancellation; enabling a child capability also activates its parent module.
+- PR #30 merged as 965b0e925c2bd832d8b8ac3cd966c396e80fbb4c.
+- Added a real Telethon Myoi adapter for @MeowieeeQBot: bot resolution, command sending, recent-message/button observation and visible-label button clicking. It is exposed from linked-account runtime.
+- Myoi-specific workflows are deliberately not guessed; real bot behavior must be observed before implementing fishing/factory/roulette/etc.
