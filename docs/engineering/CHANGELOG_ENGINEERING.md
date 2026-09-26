@@ -115,3 +115,11 @@ Only environment-dependent verification remains before final release: real Teleg
 - PR #30 merged: added real Telethon adapter for @MeowieeeQBot with command sending and visible-button observation/clicking.
 - Added configurable MYOI_BOT_USERNAME with safe default MeowieeeQBot.
 - No undocumented Myoi workflow behavior was fabricated.
+
+
+## 2026-09-27 — External SQL Server Persistence
+- Added `mssql+pyodbc` database configuration support while retaining SQLite/PostgreSQL.
+- Added durable migration for domain state, security audit, encrypted Telegram sessions and diamond economy.
+- Registered all durable ORM models with Alembic.
+- Updated the Windows runtime to install the SQL Server driver and verify database connectivity.
+- Added regression coverage for SQL Server configuration and complete durable schema creation.
