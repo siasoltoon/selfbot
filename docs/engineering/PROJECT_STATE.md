@@ -65,3 +65,9 @@ Do not mark the entire project release PASS until those evidence items are compl
 - CI for the final feature head c74a5a8194931a24807d35da19375346a92d610c passed on Python 3.11 and 3.12.
 - One-time operator setup remains: enable Inline Mode for the onboarding bot with BotFather /setinline.
 - Capability enabled state is distinct from external provider/worker availability; unavailable dependencies must still fail safely.
+
+
+## 2026-09-26 Panel v2
+- Telegram management panel upgraded to a hierarchical Control Center and merged as d504af985246efa1480b73182b17c790a56bc175.
+- Main → category → module → sub-capability navigation is implemented with durable owner-scoped state.
+- Real Telegram UI verification of the nested panel remains pending.
