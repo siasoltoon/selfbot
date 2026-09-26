@@ -61,3 +61,10 @@
 - Persist capability settings through DomainStore/domain_state rather than adding a duplicate settings table.
 - Separate capability enabled state from dependency availability. A toggle never creates a fake provider/worker result.
 - Security and task/scheduler remain always enabled to preserve recovery and core safety controls.
+
+
+## Decision — Hierarchical Telegram Control Center (2026-09-26)
+- Keep panel navigation metadata in a dedicated PanelService instead of embedding all menu structure in the Telegram adapter.
+- Use inline callback editing for navigation so the panel behaves like a single control surface rather than producing chat spam.
+- Keep capability state in CapabilityService/domain_state and make parent/child relationships explicit.
+- Security and Task/Scheduler remain core non-disableable controls.
