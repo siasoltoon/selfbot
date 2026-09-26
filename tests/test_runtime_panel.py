@@ -129,12 +129,12 @@ def test_router_supports_balance_and_transfer_commands(tmp_path):
     router.start()
 
     async def run():
+        services.economy.adjust("owner", "owner", 100)
         await telegram.events.dispatch(EventEnvelope(
             "telegram.new_message", "telegram.account.1",
             {"text": ".موجودی", "telegram_account_id": "1", "outgoing": True},
             actor_id="owner", chat_id="self",
         ))
-        services.economy.adjust("owner", "owner", 100)
         await telegram.events.dispatch(EventEnvelope(
             "telegram.new_message", "telegram.account.1",
             {"text": ".انتقال 50 200", "telegram_account_id": "1", "outgoing": True},
