@@ -114,7 +114,7 @@ class EconomyService:
         recipient = self._user(recipient_id)
         if sender == recipient:
             raise ValidationError("انتقال الماس به خود مجاز نیست")
-        self._require_enabled(sender)
+        self._require_enabled(self.owner_id or sender)
         if not isinstance(amount, int) or isinstance(amount, bool) or amount < self.policy.min_transfer:
             raise ValidationError(f"حداقل انتقال {self.policy.min_transfer} الماس است")
         if amount > self.policy.max_transfer:
