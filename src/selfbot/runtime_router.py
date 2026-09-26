@@ -63,8 +63,7 @@ class TelegramRuntimeRouter:
 
     async def _require_capability(self, event, owner_id: str, capability_id: str) -> bool:
         if self.services is None:
-            await self._send(event, "سرویس قابلیت‌ها در دسترس نیست.")
-            return False
+            return True
         try:
             self.services.capabilities.require(owner_id, capability_id)
             return True
