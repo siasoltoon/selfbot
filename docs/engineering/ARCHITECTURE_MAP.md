@@ -90,3 +90,8 @@ Telegram event -> RuntimeRouter -> CapabilityService gate -> concrete core opera
 Linked Telethon user client -> MyoiTelegramAdapter -> @MeowieeeQBot messages/visible inline buttons.
 - Adapter is intentionally transport-focused and does not hardcode undocumented callback data.
 - Workflow services will consume this adapter after real observations establish stable labels/flows.
+
+
+## 2026-09-27 — External Database Persistence
+- Storage adapter boundary: SQLAlchemy `Database` accepts SQLite, PostgreSQL and SQL Server (`mssql+pyodbc`) without changing core services.
+- Durable schema ownership: Alembic imports all ORM models; migration `0003_durable_runtime_state` provisions domain state, security audit, encrypted Telegram sessions and diamond economy.
