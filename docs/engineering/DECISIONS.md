@@ -92,3 +92,12 @@
 
 ## 2026-09-27 — External Database Persistence
 - 2026-09-27: Keep external DB deployment-agnostic through `DATABASE_URL`; add SQL Server via `mssql+pyodbc` as an optional driver rather than coupling core logic to SQL Server. GitHub Actions must not expose SQL Server directly to the public internet; use a private network/VPN path for operator-hosted databases.
+
+
+## 2026-09-27 — Private SQL Server Access from GitHub Actions
+- Selected Tailscale as the private-network boundary for reaching an operator-hosted SQL Server from GitHub-hosted Actions.
+- SQL Server is not exposed directly to the public internet and no public 1433 port-forwarding is required.
+- GitHub Actions joins the tailnet as an ephemeral CI node using Tailscale Workload Identity Federation.
+- The workflow integration is opt-in through repository variable `TAILSCALE_ENABLED=true`; existing runtime behavior remains unchanged when disabled.
+- Database connection remains deployment-agnostic through `DATABASE_URL`; the connection string may target the laptop's Tailscale address.
+- The laptop remains the database host; if the laptop is offline, database-dependent runtime execution must fail explicitly rather than pretending persistence is available.
