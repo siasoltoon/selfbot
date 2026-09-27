@@ -98,3 +98,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Added the missing durable migration covering Telegram sessions, domain state, security audit and diamond economy.
 - Runtime startup now installs the SQL Server driver in the GitHub Windows workflow and verifies database connectivity after migration.
 - Next: create/configure the operator's SQL Server Express instance, set the encrypted `DATABASE_URL` GitHub secret, run the runtime workflow, and verify migration + session reuse across a restart.
+
+
+## 2026-09-27 — Private SQL Server Access
+- Selected Tailscale as the private network boundary between GitHub-hosted runtime and the operator laptop's SQL Server.
+- Added opt-in workflow integration and operator documentation.
+- Next operator step: configure Tailscale tag/federated identity, connect the laptop, configure SQL Server TCP/IP/fixed port and create the GitHub DATABASE_URL secret.
+- Do not mark the external database gate PASS until the real migration and restart/session-reuse test succeeds.
