@@ -99,3 +99,8 @@ A phase remains non-final until its required evidence is recorded.
 - PR #33 SQL Server persistence implementation: CI validation passed on Python 3.11 and 3.12 after fixing test-file newline encoding.
 - SQLite Alembic regression now verifies all durable tables, including Telegram accounts and diamond economy.
 - Real SQL Server migration/connectivity remains NOT_RUN until an operator-provided SQL Server endpoint is reachable.
+
+
+## 2026-09-27 — Tailscale Private DB Integration
+- Repository-side workflow integration added on branch `feat/tailscale-private-db`.
+- No live Tailscale/SQL Server test has been run yet because the operator-side tailnet, laptop SQL endpoint and GitHub secrets are not configured in the repository evidence.
