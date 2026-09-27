@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: telegram-bot-runtime
@@ -46,6 +47,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[mssql]"
+
+      - name: Connect to private tailnet
+        if: vars.TAILSCALE_ENABLED == 'true'
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:selfbot-ci
+          ping: ${{ vars.SELFBOT_DATABASE_TAILSCALE_HOST }}
 
       - name: Resolve database configuration
         shell: pwsh
