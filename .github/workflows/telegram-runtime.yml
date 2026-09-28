@@ -48,6 +48,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[mssql]"
 
+      - name: Verify SQL Server ODBC driver
+        shell: pwsh
+        run: |
+          $driver = Get-OdbcDriver -Name "ODBC Driver 18 for SQL Server" -ErrorAction SilentlyContinue
+          if (-not $driver) {
+            Write-Error "ODBC Driver 18 for SQL Server is not installed on this runner."
+            exit 1
+          }
+          Write-Host "Found ODBC Driver 18 for SQL Server."
+
       - name: Connect to private tailnet
         if: vars.TAILSCALE_ENABLED == 'true'
         uses: tailscale/github-action@v4
@@ -57,14 +67,32 @@ jobs:
           tags: tag:selfbot-ci
           ping: ${{ vars.SELFBOT_DATABASE_TAILSCALE_HOST }}
 
+      - name: Verify private SQL Server TCP reachability
+        if: vars.TAILSCALE_ENABLED == 'true'
+        shell: pwsh
+        run: |
+          $hostName = "${{ vars.SELFBOT_DATABASE_TAILSCALE_HOST }}"
+          $result = Test-NetConnection -ComputerName $hostName -Port 1433 -InformationLevel Quiet
+          if (-not $result) {
+            Write-Error "Cannot reach SQL Server over the private network."
+            exit 1
+          }
+          Write-Host "SQL Server TCP 1433 is reachable."
+
       - name: Resolve database configuration
         shell: pwsh
         run: |
-          if (-not "${{ secrets.DATABASE_URL }}") {
+          $databaseUrl = "${{ secrets.DATABASE_URL }}"
+          if ("${{ vars.TAILSCALE_ENABLED }}" -eq "true" -and [string]::IsNullOrWhiteSpace($databaseUrl)) {
+            Write-Error "DATABASE_URL is required when TAILSCALE_ENABLED=true."
+            exit 1
+          }
+
+          if ([string]::IsNullOrWhiteSpace($databaseUrl)) {
             "DATABASE_URL=sqlite:///./data/selfbot.db" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             Write-Host "DATABASE_URL secret is absent; using ephemeral SQLite for this runtime only."
           } else {
-            "DATABASE_URL=${{ secrets.DATABASE_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            "DATABASE_URL=$databaseUrl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
 
       - name: Prepare database
