@@ -87,3 +87,10 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Alembic metadata now imports every durable ORM model so fresh external databases receive the required schema.
 - GitHub Windows runtime installs the optional SQL Server driver and performs a database ping after migrations.
 - External SQL Server connectivity is configuration-dependent; no external database is claimed PASS until an operator provides a reachable database and runs the migration smoke test.
+
+
+## 2026-09-27 — Private Database Network
+- Added an opt-in Tailscale integration for the GitHub-hosted Windows runtime.
+- The runtime can reach an operator-hosted SQL Server through a private tailnet without public SQL Server exposure.
+- The integration is disabled by default and requires operator-side Tailscale configuration before live verification.
+- Real SQL Server connectivity/migration/session-reuse evidence remains NOT_RUN.

@@ -95,3 +95,9 @@ Linked Telethon user client -> MyoiTelegramAdapter -> @MeowieeeQBot messages/vis
 ## 2026-09-27 — External Database Persistence
 - Storage adapter boundary: SQLAlchemy `Database` accepts SQLite, PostgreSQL and SQL Server (`mssql+pyodbc`) without changing core services.
 - Durable schema ownership: Alembic imports all ORM models; migration `0003_durable_runtime_state` provisions domain state, security audit, encrypted Telegram sessions and diamond economy.
+
+
+## 2026-09-27 — Private DB transport
+- GitHub-hosted runtime may reach operator-hosted SQL Server through an ephemeral Tailscale CI node.
+- Tailscale is an infrastructure adapter; core services continue to consume only deployment-neutral `DATABASE_URL`.
+- SQL Server remains private and is not made publicly reachable by the application.
