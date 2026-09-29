@@ -48,12 +48,18 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[mssql]"
 
-      - name: Verify SQL Server ODBC driver
+      - name: Ensure SQL Server ODBC driver
         shell: pwsh
         run: |
           $driver = Get-OdbcDriver -Name "ODBC Driver 18 for SQL Server" -ErrorAction SilentlyContinue
           if (-not $driver) {
-            Write-Error "ODBC Driver 18 for SQL Server is not installed on this runner."
+            Write-Host "ODBC Driver 18 for SQL Server is not installed; installing via WinGet."
+            winget install --exact --id Microsoft.msodbcsql.18 --source winget --silent --accept-package-agreements --accept-source-agreements
+          }
+
+          $driver = Get-OdbcDriver -Name "ODBC Driver 18 for SQL Server" -ErrorAction SilentlyContinue
+          if (-not $driver) {
+            Write-Error "ODBC Driver 18 for SQL Server is unavailable after installation."
             exit 1
           }
           Write-Host "Found ODBC Driver 18 for SQL Server."
