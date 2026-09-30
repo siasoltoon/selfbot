@@ -41,6 +41,16 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Install SQL Server ODBC driver
+        shell: pwsh
+        run: |
+          winget install --exact --id Microsoft.msodbcsql.18 --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+          $driver = Get-OdbcDriver -Name "ODBC Driver 18 for SQL Server" -ErrorAction SilentlyContinue
+          if (-not $driver) {
+            throw "Microsoft ODBC Driver 18 for SQL Server is not installed or not registered."
+          }
+          Write-Host "SQL Server ODBC driver: $($driver.Name) $($driver.Version)"
+
       - name: Install runtime
         shell: pwsh
         run: |
