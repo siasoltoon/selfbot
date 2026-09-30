@@ -5,7 +5,9 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
 
-def test_alembic_upgrade_head(tmp_path):
+def test_alembic_upgrade_head(tmp_path, monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
     root = Path(__file__).resolve().parents[1]
     database_url = f"sqlite:///{tmp_path / 'migration.db'}"
 
