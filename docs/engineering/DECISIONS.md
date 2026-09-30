@@ -92,3 +92,10 @@
 
 ## 2026-09-27 — External Database Persistence
 - 2026-09-27: Keep external DB deployment-agnostic through `DATABASE_URL`; add SQL Server via `mssql+pyodbc` as an optional driver rather than coupling core logic to SQL Server. GitHub Actions must not expose SQL Server directly to the public internet; use a private network/VPN path for operator-hosted databases.
+
+
+## Decision — External SQL Server Verification (2026-09-30)
+- Treat `DATABASE_URL` as the sole application-level database selection boundary; Alembic must honor the same environment-selected URL as the runtime.
+- SQL Server is validated through `mssql+pyodbc` and an installed Microsoft ODBC driver; no SQL Server-specific core-service branching is introduced.
+- External SQL Server verification requires migration-to-head evidence plus encrypted durable-session write/read/reload evidence, not only a TCP connectivity check.
+- Runtime reload regression uses a fake Telegram client for deterministic application-level validation; live Telegram reconnect remains a separate environment-dependent gate.

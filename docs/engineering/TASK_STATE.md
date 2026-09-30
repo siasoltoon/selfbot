@@ -98,3 +98,16 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Added the missing durable migration covering Telegram sessions, domain state, security audit and diamond economy.
 - Runtime startup now installs the SQL Server driver in the GitHub Windows workflow and verifies database connectivity after migration.
 - Next: create/configure the operator's SQL Server Express instance, set the encrypted `DATABASE_URL` GitHub secret, run the runtime workflow, and verify migration + session reuse across a restart.
+
+
+## 2026-09-30 — External SQL Server Persistence Task COMPLETE
+- Operator-provided SQL Server Express database was reached successfully from the project environment.
+- `DATABASE_URL` was configured privately; secrets were not emitted in test output.
+- Python/SQLAlchemy/pyodbc connection returned the expected SQL Server database/login context.
+- Alembic upgraded the real database from the initial schema through `0004_diamond_economy`.
+- Real database inspection confirmed `alembic_version`, `domain_state`, `security_audit`, `telegram_accounts`, `tasks`, `system_metadata`, `diamond_wallets` and `diamond_transactions`.
+- Encrypted Telegram session persistence smoke test: PASS.
+- Runtime session reload smoke test across two `MultiUserTelegramRuntime` instances: PASS.
+- Cleanup after the smoke test: PASS.
+- Full local pytest after PR #37 merge: PASS.
+- This task is complete; the active Telegram verification task remains separate and is not marked complete by the SQL Server evidence.

@@ -83,3 +83,13 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 
 ## 2026-09-27 — External Database Persistence
 - Phase 20 Storage Hardening: SQL Server persistence path is now implemented in code; real target-database migration/connectivity evidence remains.
+
+
+## 2026-09-30 — Phase 20 External Persistence Gate
+- SQL Server target connectivity: PASS.
+- Alembic migration to head `0004_diamond_economy`: PASS.
+- Durable schema inspection in the real SQL Server database: PASS.
+- Encrypted Telegram session persistence write/read/decrypt/cleanup: PASS.
+- Runtime reconstruction/reload against the same durable SQL Server store: PASS using a deterministic fake Telegram client, without contacting Telegram.
+- Full local pytest after PR #37 merge: PASS.
+- Phase 20 SQL Server persistence verification is complete; remaining Phase 20 production hardening evidence is tracked separately for other database/deployment targets.

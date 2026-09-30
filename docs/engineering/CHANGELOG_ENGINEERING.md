@@ -123,3 +123,15 @@ Only environment-dependent verification remains before final release: real Teleg
 - Registered all durable ORM models with Alembic.
 - Updated the Windows runtime to install the SQL Server driver and verify database connectivity.
 - Added regression coverage for SQL Server configuration and complete durable schema creation.
+
+
+## 2026-09-30 — External SQL Server Verification
+- Fixed Alembic environment handling so `DATABASE_URL` is honored instead of silently using the SQLite URL from `alembic.ini`.
+- Added regression coverage for Alembic environment URL selection and isolated the legacy migration test from an externally configured `DATABASE_URL`.
+- PR #35 (`fix(db): honor DATABASE_URL in Alembic`) merged.
+- PR #36 (`test(db): isolate migration test from DATABASE_URL`) merged; CI run 36690252153 passed.
+- PR #37 (`test(telegram): verify persisted session reload across restart`) merged as `65594754cdfed7e2e0cd6006d55c5e464ebaa1d8`; CI run 36697168438 passed.
+- Real operator SQL Server migration/connectivity verification completed successfully through `0004_diamond_economy`.
+- Real encrypted session persistence and deterministic runtime reload smoke tests completed successfully.
+- Full local pytest after PR #37 merge passed with no failures.
+- External SQL Server persistence gate is now recorded as PASS; broader final-release evidence remains open.
