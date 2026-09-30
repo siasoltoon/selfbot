@@ -6,7 +6,7 @@ import pytest
 from selfbot.db import Database
 from selfbot.errors import NotFoundError, ValidationError
 from selfbot.multi_user_security import SessionCipher
-from selfbot.multi_user_telegram import TelegramAuthenticationService, TelegramSessionStore
+from selfbot.events import EventRouter\nfrom selfbot.multi_user_telegram import MultiUserTelegramRuntime, TelegramAuthenticationService, TelegramSessionStore
 
 
 class FakeSession:
