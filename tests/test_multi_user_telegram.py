@@ -6,7 +6,8 @@ import pytest
 from selfbot.db import Database
 from selfbot.errors import NotFoundError, ValidationError
 from selfbot.multi_user_security import SessionCipher
-from selfbot.multi_user_telegram import TelegramAuthenticationService, TelegramSessionStore
+from selfbot.events import EventRouter
+from selfbot.multi_user_telegram import MultiUserTelegramRuntime, TelegramAuthenticationService, TelegramSessionStore
 
 
 class FakeSession:
@@ -195,3 +196,80 @@ def test_authentication_rejects_bad_phone():
     auth = TelegramAuthenticationService("12345", "hash", store, client_factory=lambda *_: FakeClient())
     with pytest.raises(ValidationError):
         asyncio.run(auth.begin("owner-1", "09123456789"))
+
+
+class RuntimeReloadClient:
+    def __init__(self, session: str):
+        self.session = session
+        self.connected = False
+        self.disconnected = False
+        self.authorized = False
+        self.handler = None
+
+    async def connect(self):
+        self.connected = True
+        self.authorized = True
+
+    async def disconnect(self):
+        self.disconnected = True
+
+    async def is_user_authorized(self):
+        return self.authorized
+
+    def add_event_handler(self, handler):
+        self.handler = handler
+
+
+def test_runtime_reloads_persisted_session_across_runtime_instances():
+    db, store = make_store()
+    owner = "owner-reload"
+    account = "123456"
+    session = "persistent-session-value"
+    store.save(owner, account, session)
+
+    first_clients = []
+
+    def first_factory(received_session, api_id, api_hash):
+        client = RuntimeReloadClient(received_session)
+        first_clients.append((client, api_id, api_hash))
+        return client
+
+    first_runtime = __import__("selfbot.multi_user_telegram", fromlist=["MultiUserTelegramRuntime"]).MultiUserTelegramRuntime(
+        store,
+        __import__("selfbot.events", fromlist=["EventRouter"]).EventRouter(),
+        client_factory=first_factory,
+    )
+
+    async def first_run():
+        await first_runtime.start("12345", "hash")
+        assert len(first_clients) == 1
+        assert first_clients[0][0].session == session
+        assert first_clients[0][0].connected is True
+        assert first_clients[0][0].disconnected is False
+        await first_runtime.stop()
+
+    asyncio.run(first_run())
+    assert first_clients[0][0].disconnected is True
+
+    second_clients = []
+
+    def second_factory(received_session, api_id, api_hash):
+        client = RuntimeReloadClient(received_session)
+        second_clients.append((client, api_id, api_hash))
+        return client
+
+    second_runtime = __import__("selfbot.multi_user_telegram", fromlist=["MultiUserTelegramRuntime"]).MultiUserTelegramRuntime(
+        store,
+        __import__("selfbot.events", fromlist=["EventRouter"]).EventRouter(),
+        client_factory=second_factory,
+    )
+
+    async def second_run():
+        await second_runtime.start("12345", "hash")
+        assert len(second_clients) == 1
+        assert second_clients[0][0].session == session
+        assert second_clients[0][0].connected is True
+        await second_runtime.stop()
+
+    asyncio.run(second_run())
+    assert second_clients[0][0].disconnected is True
