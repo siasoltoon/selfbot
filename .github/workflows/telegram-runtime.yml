@@ -51,6 +51,13 @@ jobs:
           }
           Write-Host "SQL Server ODBC driver: $($driver.Name) $($driver.Version)"
 
+      - name: Connect GitHub runner to Tailscale
+        if: ${{ secrets.TAILSCALE_AUTHKEY != '' }}
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          ping: 100.114.8.105
+
       - name: Install runtime
         shell: pwsh
         run: |
