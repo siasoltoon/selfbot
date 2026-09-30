@@ -99,3 +99,15 @@ A phase remains non-final until its required evidence is recorded.
 - PR #33 SQL Server persistence implementation: CI validation passed on Python 3.11 and 3.12 after fixing test-file newline encoding.
 - SQLite Alembic regression now verifies all durable tables, including Telegram accounts and diamond economy.
 - Real SQL Server migration/connectivity remains NOT_RUN until an operator-provided SQL Server endpoint is reachable.
+
+
+## 2026-09-30 — External SQL Server Verification
+- Local environment had `ODBC Driver 18 for SQL Server` available and `Test-NetConnection 127.0.0.1 -Port 1433` succeeded.
+- SQLAlchemy connection test through `mssql+pyodbc` succeeded against the configured SQL Server database.
+- `python -m alembic upgrade head` completed successfully through `0004_diamond_economy`.
+- SQL Server schema inspection confirmed all expected durable tables; `dbo.alembic_version` reported `0004_diamond_economy`.
+- Encrypted Telegram session persistence smoke test: `DB_PERSISTENCE_WRITE=PASS` and `DB_PERSISTENCE_CLEANUP=PASS`.
+- Runtime reload smoke test: `SQLSERVER_RUNTIME_RELOAD=PASS` and `SQLSERVER_RUNTIME_RELOAD_CLEANUP=PASS`.
+- PR #37 CI run 36697168438 passed; PR #37 merged as `65594754cdfed7e2e0cd6006d55c5e464ebaa1d8`.
+- Full local `python -m pytest -q` after the merge: PASS with no failures.
+- The runtime reload smoke test intentionally used a fake Telegram client, so it proves durable session reconstruction but does not replace a real Telegram reconnect test.
