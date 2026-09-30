@@ -87,3 +87,14 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Alembic metadata now imports every durable ORM model so fresh external databases receive the required schema.
 - GitHub Windows runtime installs the optional SQL Server driver and performs a database ping after migrations.
 - External SQL Server connectivity is configuration-dependent; no external database is claimed PASS until an operator provides a reachable database and runs the migration smoke test.
+
+
+## 2026-09-30 — External SQL Server Verification COMPLETE
+- Real operator-hosted SQL Server connectivity verified from the local project environment through SQLAlchemy + pyodbc using `mssql+pyodbc`.
+- `python -m alembic upgrade head` completed successfully through `0004_diamond_economy`.
+- SQL Server `dbo.alembic_version` reports `0004_diamond_economy`; all expected durable tables were observed.
+- Encrypted Telegram session write/read/decrypt/cleanup smoke test passed against the real SQL Server database.
+- Multi-user runtime reload smoke test passed: a new `MultiUserTelegramRuntime` reconstructed from the same durable store loaded the encrypted session twice, authorized the client, and stopped cleanly; cleanup passed.
+- Full local pytest suite after PR #37 merge passed with no failures.
+- PR #37 merged to `main` as `65594754cdfed7e2e0cd6006d55c5e464ebaa1d8`.
+- External SQL Server persistence gate is now PASS. This does not imply the entire project release is PASS; remaining provider, worker, OCR, deployment, backup/recovery, performance and live Telegram routing evidence remains.
