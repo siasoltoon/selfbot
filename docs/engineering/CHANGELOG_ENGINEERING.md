@@ -143,3 +143,12 @@ Only environment-dependent verification remains before final release: real Teleg
 - PR #42 merged as 750ed593ededda0c19ded9ac68dc76701c143689.
 - Added bounded retry/backoff for initial DB connection checkout, network pool recycling/pre-ping, SQL Server connection timeout, and environment-controlled retry settings.
 - CI run 36839640139 passed on Python 3.11/3.12.
+
+
+## 2026-10-01 — Runtime migration connectivity resilience
+- Fresh runtime run 36840274511 reached Tailscale successfully but failed during Alembic Prepare database with SQL Server ODBC 08001/TCP timeout 258.
+- Identified a separate migration connection path that was not covered by PR #42's application-session retry logic.
+- PR #43 added a reusable bounded connection-acquisition retry helper, applied it to Alembic, added SQL Server connection timeout handling, and made runtime retry settings explicit.
+- Added regression coverage proving connection acquisition can retry without replaying caller work.
+- PR #43 CI run 36840788999 passed on Python 3.11 and 3.12.
+- PR #43 merged to main as 02ac2504fb81792e969c636b2153808725e1ce37.
