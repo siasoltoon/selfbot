@@ -64,12 +64,12 @@ class Database:
         self.connect_retries = connect_retries
         self.connect_retry_delay = connect_retry_delay
 
-    def _acquire_connection(self, session: Session) -> None:
+    def _acquire_connection(self, session: Session) -> Session:
         """Force pool checkout before caller executes work."""
         for attempt in range(self.connect_retries + 1):
             try:
                 session.connection()
-                return
+                return session
             except DBAPIError:
                 session.close()
                 if attempt >= self.connect_retries:
@@ -78,6 +78,8 @@ class Database:
                 if self.connect_retry_delay:
                     time.sleep(self.connect_retry_delay * (2**attempt))
                 session = self.session_factory()
+
+        return session
 
     def ping(self) -> bool:
         for attempt in range(self.connect_retries + 1):
@@ -97,7 +99,7 @@ class Database:
     def session(self) -> Generator[Session, None, None]:
         session = self.session_factory()
         try:
-            self._acquire_connection(session)
+            session = self._acquire_connection(session)
             yield session
             session.commit()
         except Exception:
