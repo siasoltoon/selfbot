@@ -170,3 +170,14 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added regression tests for both behaviors.
 - PR #45 CI run 36845834506 passed on Python 3.11 and 3.12.
 - PR #45 merged to main as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
+
+
+## 2026-10-01 — Telegram Panel Runtime Incident / PR #46
+- Diagnosed live /panel routing failure from GitHub Actions logs.
+- Confirmed intermittent SQL Server/Tailscale connectivity failures during durable state reads.
+- Confirmed deterministic Telethon entity bug: numeric chat ID was passed as a string, causing entity lookup failure.
+- Added propagation of Telethon input_chat through Telegram event payload and runtime router transport.
+- Added integer normalization fallback for numeric chat IDs.
+- Added UTF-8-safe Windows structured logging.
+- Added regression tests for entity propagation and numeric chat transport.
+- PR #46: fix(telegram): harden panel entity transport and Windows logs.
