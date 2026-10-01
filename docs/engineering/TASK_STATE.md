@@ -157,3 +157,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Secondary log failure occurred because the error-response path attempted the same invalid string entity; Windows cp1252 logging then masked part of the diagnostic with UnicodeEncodeError.
 - PR #46 implements the transport/entity and UTF-8 logging fixes.
 - Remaining verification: CI green, merge, fresh runtime, /panel and /پنل in Saved Messages, bot chat, private chat and group, plus capability toggle persistence.
+
+
+## 2026-10-01 — PR #46 Completed Code-Side Fix
+- PR #46 CI run 36848464965 passed on Python 3.11 and 3.12.
+- Regression coverage now verifies numeric chat-ID normalization and preservation of the originating Telethon input chat entity through routing.
+- Windows structured logging no longer depends on cp1252 for Persian exception output.
+- Next operator gate: merge, restart Telegram runtime, then verify /panel and /پنل in Saved Messages, onboarding bot chat, private chat and group, followed by toggle persistence.
