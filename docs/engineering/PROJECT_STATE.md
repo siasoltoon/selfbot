@@ -152,3 +152,12 @@ Do not mark the entire project release PASS until those evidence items are compl
 - PR #46 CI run 36848464965 passed on Python 3.11 and 3.12 after fixing test transport fakes for the new chat-entity argument.
 - The deterministic linked-account Telegram entity bug and Windows UTF-8 diagnostic failure are code-side fixed and regression-covered.
 - Real Telegram panel interaction remains pending until a fresh runtime is deployed from the merged change.
+
+
+## 2026-10-01 — Runner → SQL Diagnostic Layer
+- PR #47 adds deployment-safe runtime diagnostics before Telegram startup: Runner network identity, Tailscale status/route, repeated ICMP/TCP 1433 checks, and a redacted SQLAlchemy query check.
+- The diagnostic fails early when TCP 1433 is unreachable, separating network/firewall/path failures from SQL authentication/query failures.
+- PR #47 CI run 36850285954 passed on Python 3.11/3.12.
+- No secrets are printed and no Telegram session, encryption key, SQL credential, firewall exposure or Inline Mode setting was changed.
+- Real runner-to-PC connectivity is still NOT PASS until a fresh Telegram Bot Runtime execution produces the diagnostic evidence.
+- Next: merge PR #47, trigger Telegram Bot Runtime from main, and inspect the diagnostic block before changing any infrastructure or credentials.
