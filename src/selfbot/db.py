@@ -135,12 +135,22 @@ class Database:
         return False
 
     @contextmanager
-    def session(self) -> Generator[Session, None, None]:
+    def session(self, *, read_only: bool = False) -> Generator[Session, None, None]:
+        """Provide a session with explicit transaction semantics.
+
+        Read-only callers roll back the implicit transaction opened by a SELECT
+        instead of issuing a network COMMIT. This avoids turning a harmless
+        connectivity interruption into a failed read operation while keeping
+        normal write callers transactional.
+        """
         session = self.session_factory()
         try:
             session = self._acquire_connection(session)
             yield session
-            session.commit()
+            if read_only:
+                session.rollback()
+            else:
+                session.commit()
         except Exception:
             session.rollback()
             raise
