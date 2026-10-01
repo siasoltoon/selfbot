@@ -161,3 +161,10 @@ Do not mark the entire project release PASS until those evidence items are compl
 - No secrets are printed and no Telegram session, encryption key, SQL credential, firewall exposure or Inline Mode setting was changed.
 - Real runner-to-PC connectivity is still NOT PASS until a fresh Telegram Bot Runtime execution produces the diagnostic evidence.
 - Next: merge PR #47, trigger Telegram Bot Runtime from main, and inspect the diagnostic block before changing any infrastructure or credentials.
+
+## 2026-10-01 — Live SQL/Tailscale Runtime Diagnostic
+- PR #47 merged to main with preflight Tailscale/TCP/SQL diagnostics.
+- Real Run 36850880589 proved initial Tailscale + SQL connectivity and migrations can pass, but later runtime DB access failed with ODBC 08S01/10060 and 08001/258 timeouts to 100.114.8.105:1433.
+- PR #48 adds a live 15-second Tailscale peer/TCP 1433 monitor during the Telegram bot process and publishes its log on cancellation/exit.
+- This is diagnostic-only and does not change DB credentials, Telegram session, firewall exposure, or application DB behavior.
+
