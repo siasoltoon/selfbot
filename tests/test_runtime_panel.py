@@ -210,3 +210,27 @@ def test_cancel_capability_cancels_owner_tasks(tmp_path):
     assert "1 عملیات لغو شد" in telegram.sent[0][1]
     assert tasks.get(task_id).status == "cancelled"
     db.engine.dispose()
+
+
+def test_database_connection_retry_settings_are_safe():
+    from selfbot.config import load_settings
+    import os
+
+    original_retries = os.environ.get("DATABASE_CONNECT_RETRIES")
+    original_delay = os.environ.get("DATABASE_CONNECT_RETRY_DELAY")
+    try:
+        os.environ["DATABASE_CONNECT_RETRIES"] = "4"
+        os.environ["DATABASE_CONNECT_RETRY_DELAY"] = "0.25"
+        settings = load_settings()
+        assert settings.database_connect_retries == 4
+        assert settings.database_connect_retry_delay == 0.25
+        assert settings.database_connect_retries >= 0
+    finally:
+        if original_retries is None:
+            os.environ.pop("DATABASE_CONNECT_RETRIES", None)
+        else:
+            os.environ["DATABASE_CONNECT_RETRIES"] = original_retries
+        if original_delay is None:
+            os.environ.pop("DATABASE_CONNECT_RETRY_DELAY", None)
+        else:
+            os.environ["DATABASE_CONNECT_RETRY_DELAY"] = original_delay
