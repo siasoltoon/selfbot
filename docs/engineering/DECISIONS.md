@@ -113,3 +113,9 @@
 - Retry only connection acquisition before migration work begins. Never catch migration-body failures and replay migrations automatically.
 - SQL Server migration connections use a bounded ODBC login/connect timeout.
 - Runtime workflow exposes DATABASE_CONNECT_RETRIES and DATABASE_CONNECT_RETRY_DELAY explicitly so deployment operators can tune transient network behavior without code changes.
+
+
+## Decision — Persisted Telegram session construction (2026-10-01)
+- Durable Telegram sessions are encrypted `StringSession` payloads. Runtime restoration must explicitly construct Telethon `StringSession(payload)` before passing it to `TelegramClient`.
+- Never pass a persisted session payload directly as the `session` positional argument because Telethon treats a plain string as a SQLite session filename.
+- Existing encrypted session records remain authoritative; fixing the constructor must not require reauthentication.
