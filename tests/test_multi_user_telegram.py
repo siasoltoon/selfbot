@@ -66,6 +66,15 @@ def make_store():
     ))
 
 
+def test_runtime_uses_telethon_string_session_for_persisted_payload():
+    db, store = make_store()
+    runtime = MultiUserTelegramRuntime(store, EventRouter())
+
+    client = runtime._new_client("", 12345, "hash")
+
+    assert client.session.__class__.__name__ == "StringSession"
+    client.session.close()
+
 def test_session_cipher_round_trip():
     cipher = SessionCipher("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
     token = cipher.encrypt("telethon-session")
