@@ -224,6 +224,7 @@ def test_database_connection_retry_settings_are_safe():
         settings = load_settings()
         assert settings.database_connect_retries == 4
         assert settings.database_connect_retry_delay == 0.25
+        assert settings.database_connect_retries >= 0
     finally:
         if original_retries is None:
             os.environ.pop("DATABASE_CONNECT_RETRIES", None)
