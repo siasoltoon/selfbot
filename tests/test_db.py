@@ -1,3 +1,5 @@
+from sqlalchemy import text
+
 from selfbot.db import Database
 from selfbot.models import SystemMetadata
 
@@ -23,4 +25,4 @@ def test_read_only_session_uses_rollback_for_select():
     database.create_schema_for_tests()
 
     with database.session(read_only=True) as session:
-        session.execute(__import__("sqlalchemy").text("SELECT 1"))
+        session.execute(text("SELECT 1"))
