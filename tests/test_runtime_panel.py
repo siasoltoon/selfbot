@@ -1,6 +1,8 @@
 import asyncio
 
-from selfbot.db import Database
+from sqlalchemy.exc import DBAPIError
+
+from selfbot.db import Database, connect_with_retries
 from selfbot.domain_store import DomainStore
 from selfbot.capabilities import CapabilityService
 from selfbot.events import EventEnvelope, EventRouter
@@ -18,6 +20,38 @@ class FakeTelegram:
 
     async def open_panel(self, chat_id, *, owner_id, account_id=None):
         self.panels.append((chat_id, owner_id, account_id))
+
+
+def test_database_connect_with_retries_only_retries_acquisition():
+    class FakeConnection:
+        def __init__(self):
+            self.closed = False
+
+        def close(self):
+            self.closed = True
+
+    class FakeEngine:
+        def __init__(self):
+            self.attempts = 0
+            self.disposals = 0
+            self.connection = FakeConnection()
+
+        def connect(self):
+            self.attempts += 1
+            if self.attempts < 3:
+                raise DBAPIError("connect", {}, RuntimeError("temporary"))
+            return self.connection
+
+        def dispose(self):
+            self.disposals += 1
+
+    engine = FakeEngine()
+    with connect_with_retries(engine, retries=2, retry_delay=0):
+        pass
+
+    assert engine.attempts == 3
+    assert engine.disposals == 2
+    assert engine.connection.closed
 
 
 def test_router_opens_panel_for_outgoing_saved_message_and_group_command():
