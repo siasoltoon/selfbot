@@ -161,7 +161,38 @@ jobs:
           New-Item -ItemType Directory -Force -Path data | Out-Null
           alembic upgrade head
 
+      - name: Start live Tailscale and SQL TCP monitor
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:GITHUB_WORKSPACE "runtime-network-probe.log"
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "scripts/monitor_tailscale_sql.ps1"
+          $pidPath = Join-Path $env:GITHUB_WORKSPACE "runtime-network-probe.pid"
+          $process = Start-Process -FilePath "pwsh.exe" -ArgumentList "-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",$scriptPath,"-Target","100.114.8.105","-Port","1433","-IntervalSeconds","15","-OutputPath",$logPath -WindowStyle Hidden -PassThru
+          $process.Id | Out-File -FilePath $pidPath -Encoding ascii
+          Write-Host "Started live network monitor PID=$($process.Id)"
+
       - name: Start Telegram bot
         shell: pwsh
         run: |
-          python scripts/run_bot.py
+          try {
+            python scripts/run_bot.py
+          } finally {
+            $pidPath = Join-Path $env:GITHUB_WORKSPACE "runtime-network-probe.pid"
+            if (Test-Path $pidPath) {
+              $pid = [int](Get-Content $pidPath | Select-Object -First 1)
+              Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+              Write-Host "Stopped live network monitor PID=$pid"
+            }
+          }
+
+      - name: Publish live network diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:GITHUB_WORKSPACE "runtime-network-probe.log"
+          if (Test-Path $logPath) {
+            Write-Host "=== Live Tailscale / SQL TCP probe ==="
+            Get-Content $logPath
+          } else {
+            Write-Warning "Live network probe log was not created."
+          }

@@ -168,3 +168,12 @@ A phase remains non-final until its required evidence is recorded.
 - CI run 36850285954: PASS on Python 3.11 and Python 3.12.
 - Diagnostic workflow code is covered by normal compile/test CI, but real GitHub Runner → PC SQL connectivity remains environment-dependent and is NOT claimed PASS by CI.
 - The next evidence source is a manually triggered Telegram Bot Runtime run containing the new Tailscale/TCP/SQL diagnostic output.
+
+## 2026-10-01 — Telegram Runtime connectivity evidence
+- Run 36850880589 on main: initial TCP/Tailscale/SQL preflight PASS; Alembic PASS; Telegram startup/connect PASS.
+- During runtime: SQL access failed with ODBC 08S01/10060 communication-link timeout and 08001/258 login timeout to 100.114.8.105:1433.
+- `/panel` failure was logged as `telegram capability panel command failed` with the same DB connectivity error.
+- `/status` did not produce a usable response according to operator test.
+- Result: real runtime DB connectivity NOT PASS; Telegram panel/status NOT PASS.
+- PR #48 adds continuous live Tailscale/TCP evidence; no PASS is claimed until a fresh runtime proves stable connectivity.
+

@@ -171,3 +171,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - CI run 36850285954 passed on Python 3.11 and 3.12.
 - This is a diagnostic-only unit; it does not claim the external runtime is healthy.
 - Next exact step: merge PR #47, manually run Telegram Bot Runtime from main, and use the diagnostic output to classify the failure as network/Tailscale/firewall, SQL/ODBC/authentication, migration, or Telegram/application-level.
+
+## 2026-10-01 — Active blocker: live SQL connectivity
+- Run 36850880589: initial Tailscale/SQL diagnostic and migrations passed; runtime queries later failed against 100.114.8.105:1433 with 08S01/10060 and 08001/258.
+- User-reported /status and /panel produced no usable response; logs show /panel fails at DB access before panel rendering.
+- PR #48 adds a live 15-second network monitor to distinguish Tailscale peer loss from TCP 1433 loss during the actual bot session.
+- Next: run PR #48 runtime, inspect the live probe timeline, then fix the proven network/SQL failure mode before retesting Telegram commands.
+
