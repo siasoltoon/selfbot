@@ -181,3 +181,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added UTF-8-safe Windows structured logging.
 - Added regression tests for entity propagation and numeric chat transport.
 - PR #46: fix(telegram): harden panel entity transport and Windows logs.
+
+
+## 2026-10-01 — PR #46 Validation
+- Fixed test doubles for the expanded Telegram transport protocol.
+- CI run 36848464965 passed on Python 3.11 and 3.12.
+- Compileall and full pytest passed on both versions.
+- Code-side Telegram panel transport fix is verified; fresh real-runtime verification remains the next gate.
