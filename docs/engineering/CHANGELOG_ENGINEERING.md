@@ -159,3 +159,14 @@ Only environment-dependent verification remains before final release: real Teleg
 - Startup then failed because Telethon interpreted the decrypted persisted StringSession as a SQLite filename.
 - PR #44 explicitly wraps persisted payloads with `StringSession` and adds regression coverage.
 - CI 36841546134 passed; PR #44 merged to main as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`.
+
+
+## 2026-10-01 — Telegram runtime routing/DB read-path hardening
+- Runtime 36841836347 was cancelled after operator-side commands appeared unresponsive.
+- Post-cancellation log analysis confirmed the application had started and Telethon was receiving updates; the observed panel failure included SQL Server 08S01 communication-link failure during SQLEndTran.
+- Identified an unnecessary read-path COMMIT in Telegram account lookup methods as an avoidable network failure point.
+- PR #45 changed Database.session() to support explicit read_only=True sessions and updated Telegram account lookups accordingly.
+- Added EventRouter failure logging with event ID, correlation ID, source, handler name, exception type/module and bounded error text.
+- Added regression tests for both behaviors.
+- PR #45 CI run 36845834506 passed on Python 3.11 and 3.12.
+- PR #45 merged to main as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
