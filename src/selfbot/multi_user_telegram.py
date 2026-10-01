@@ -812,13 +812,21 @@ class MultiUserTelegramRuntime:
                     "message_id": str(getattr(message, "id", "") or ""),
                     "text": getattr(message, "message", None),
                     "telegram_account_id": account_id,
+                    "chat_input_entity": getattr(event, "input_chat", None),
                     "outgoing": bool(getattr(message, "out", False)),
                     "reply_to_user_id": await self._reply_user_id(message),
                 },
             ))
         return handler
 
-    async def open_panel(self, chat_id: str | int, *, owner_id: str, account_id: str | None = None) -> Any:
+    async def open_panel(
+        self,
+        chat_id: str | int,
+        *,
+        owner_id: str,
+        account_id: str | None = None,
+        chat_entity: Any | None = None,
+    ) -> Any:
         if not account_id:
             raise ValidationError("telegram account id is required for panel")
         client = self._clients.get(account_id)
@@ -835,13 +843,17 @@ class MultiUserTelegramRuntime:
         if token_factory is None:
             raise DependencyError("panel token service is not configured", retryable=False)
         query = f"panel:{token_factory(owner_id)}"
+        entity = chat_entity
+        if entity is None:
+            value = str(chat_id).strip()
+            entity = int(value) if value.lstrip("-").isdigit() else value
         try:
-            results = await client.inline_query(bot_username, query, entity=chat_id)
+            results = await client.inline_query(bot_username, query, entity=entity)
         except telethon_errors.TelegramBaseError as exc:
             raise DependencyError("panel inline query failed", retryable=True) from exc
         if not results:
             raise DependencyError("panel inline bot returned no result", retryable=True)
-        return await results[0].click(entity=chat_id)
+        return await results[0].click(entity=entity)
 
     def configure_panel(self, bot_username: str, token_factory: Callable[[str], str]) -> None:
         if not bot_username.strip():
@@ -876,7 +888,14 @@ class MultiUserTelegramRuntime:
             raise NotFoundError("Telegram user id is unavailable")
         return user_id
 
-    async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None) -> Any:
+    async def send_message(
+        self,
+        chat_id: str | int,
+        text: str,
+        *,
+        account_id: str | None = None,
+        chat_entity: Any | None = None,
+    ) -> Any:
         if not account_id:
             raise ValidationError("telegram account id is required for multi-user transport")
         client = self._clients.get(account_id)
@@ -884,7 +903,11 @@ class MultiUserTelegramRuntime:
             raise NotFoundError("Telegram account runtime is not active")
         if not text.strip():
             raise ValidationError("Telegram message text must not be empty")
-        return await client.send_message(chat_id, text)
+        entity = chat_entity
+        if entity is None:
+            value = str(chat_id).strip()
+            entity = int(value) if value.lstrip("-").isdigit() else value
+        return await client.send_message(entity, text)
 
     async def stop(self) -> None:
         clients, self._clients = self._clients, {}
