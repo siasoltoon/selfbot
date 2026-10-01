@@ -119,3 +119,11 @@ A phase remains non-final until its required evidence is recorded.
 - Full pytest passed on both versions after fixing two CI-discovered regressions during implementation: bootstrap newline syntax and backward-compatible Settings constructor defaults.
 - Added regression coverage for environment-configured database retry settings.
 - Real Telegram panel interaction is still NOT PASS; it requires a fresh runtime from merged main and operator-side /پنل verification.
+
+
+## 2026-10-01 — Runtime Migration Failure and Fix
+- Runtime workflow 36840274511 — FAIL at Prepare database; Start Telegram bot was SKIPPED.
+- Job log: ODBC Driver 18 error 08001 / TCP Provider timeout 258 while Alembic connected to 100.114.8.105:1433.
+- PR #43 CI 36840788999 — PASS on Python 3.11 and 3.12 after adding migration connection retry coverage and correcting one test formatting regression.
+- PR #43 merge commit: 02ac2504fb81792e969c636b2153808725e1ce37.
+- Real /پنل interaction remains NOT_RUN after PR #43 because the runtime did not reach bot startup.
