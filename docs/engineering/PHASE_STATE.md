@@ -93,3 +93,11 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Runtime reconstruction/reload against the same durable SQL Server store: PASS using a deterministic fake Telegram client, without contacting Telegram.
 - Full local pytest after PR #37 merge: PASS.
 - Phase 20 SQL Server persistence verification is complete; remaining Phase 20 production hardening evidence is tracked separately for other database/deployment targets.
+
+
+## 2026-10-01 — Telegram runtime hardening update
+- PR #45 is merged as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
+- Database read paths used by Telegram account lookup now explicitly use read-only sessions, preventing unnecessary network commits after SELECT-only work.
+- EventRouter now records handler failures with correlation/event context instead of returning errors without logs.
+- CI run 36845834506 passed on Python 3.11 and 3.12.
+- Real Telegram /status, linked-account routing, panel interaction and restart/session-reuse evidence remain the active external verification gate.
