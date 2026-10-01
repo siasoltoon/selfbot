@@ -99,3 +99,10 @@
 - SQL Server is validated through `mssql+pyodbc` and an installed Microsoft ODBC driver; no SQL Server-specific core-service branching is introduced.
 - External SQL Server verification requires migration-to-head evidence plus encrypted durable-session write/read/reload evidence, not only a TCP connectivity check.
 - Runtime reload regression uses a fake Telegram client for deterministic application-level validation; live Telegram reconnect remains a separate environment-dependent gate.
+
+
+## Decision — Transient external database connectivity (2026-10-01)
+- Network-backed deployments may experience brief database/tunnel interruptions after startup. The database layer may retry only initial connection checkout because replaying an arbitrary transaction could duplicate writes.
+- Use SQLAlchemy pool_pre_ping plus bounded pool_recycle for network-backed databases. SQL Server connection attempts use a bounded driver timeout.
+- Retry count and delay are deployment configuration (DATABASE_CONNECT_RETRIES, DATABASE_CONNECT_RETRY_DELAY) rather than deployment-specific code.
+- A successful local TCP/SQL test does not constitute continuous GitHub-runner reachability evidence; real runtime verification remains required.
