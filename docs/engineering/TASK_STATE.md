@@ -133,3 +133,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - PR #43 merged as 02ac2504fb81792e969c636b2153808725e1ce37 and CI 36840788999 is green on Python 3.11/3.12.
 - Next: run a fresh Telegram Bot Runtime from the new main, verify Prepare database passes and Start Telegram bot stays running, then send /پنل in Saved Messages.
 - Do not regenerate Telegram session/secrets or expose SQL Server publicly.
+
+
+## 2026-10-01 — Persisted Session Restore Failure Follow-up
+- Runtime 36841201279: `Prepare database` PASS; `Start Telegram bot` FAIL.
+- Root cause was confirmed as incorrect Telethon session construction, not SQL connectivity.
+- PR #44 merged as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`; CI 36841546134 PASS.
+- Next: run Telegram Bot Runtime again from current main. Do not change or recreate Telegram secrets/session. If startup stays running, send `/پنل` in Saved Messages.
