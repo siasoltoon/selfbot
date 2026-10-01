@@ -101,3 +101,11 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - EventRouter now records handler failures with correlation/event context instead of returning errors without logs.
 - CI run 36845834506 passed on Python 3.11 and 3.12.
 - Real Telegram /status, linked-account routing, panel interaction and restart/session-reuse evidence remain the active external verification gate.
+
+
+## 2026-10-01 — Telegram Runtime Transport Hardening
+- PR #46 open: linked-account Telegram commands now preserve the originating Telethon input entity through routing and panel delivery.
+- Numeric chat-ID fallback is normalized before Telethon calls.
+- Windows runner structured logs are forced to UTF-8-safe output.
+- CI/runtime verification is pending; do not mark real Telegram panel interaction PASS until a fresh runtime proves it.
+- SQL Server/Tailscale intermittent connectivity remains separately tracked.
