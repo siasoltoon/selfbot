@@ -123,3 +123,10 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - CI run 36850285954: PASS on Python 3.11 and 3.12.
 - The runtime environment gate remains OPEN until the manual Telegram Bot Runtime produces actual TCP 1433 and SQL query evidence.
 - No infrastructure/security settings were changed by this diagnostic unit.
+
+## 2026-10-01 — Runtime connectivity investigation
+- Initial connectivity preflight: PASS.
+- Live runtime DB connectivity: FAIL/UNSTABLE; ODBC 08S01/10060 and 08001/258 occurred after startup.
+- PR #48 adds continuous Tailscale peer + TCP 1433 evidence collection during the bot runtime.
+- External Telegram panel/status verification remains blocked until stable DB connectivity is proven.
+
