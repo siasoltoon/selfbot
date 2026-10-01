@@ -109,3 +109,10 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Windows runner structured logs are forced to UTF-8-safe output.
 - CI/runtime verification is pending; do not mark real Telegram panel interaction PASS until a fresh runtime proves it.
 - SQL Server/Tailscale intermittent connectivity remains separately tracked.
+
+
+## 2026-10-01 — Telegram Runtime Transport Hardening Validation
+- PR #46 CI run 36848464965: PASS on Python 3.11 and 3.12.
+- Compileall: PASS on both versions.
+- Pytest: PASS on both versions.
+- Real Telegram panel interaction remains external verification work.
