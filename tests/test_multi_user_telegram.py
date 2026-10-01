@@ -282,3 +282,22 @@ def test_runtime_reloads_persisted_session_across_runtime_instances():
 
     asyncio.run(second_run())
     assert second_clients[0][0].disconnected is True
+
+class NumericEntityClient:
+    def __init__(self):
+        self.sent = None
+
+    async def send_message(self, entity, text):
+        self.sent = (entity, text)
+        return self.sent
+
+
+def test_send_message_converts_numeric_chat_ids_to_integer_entities():
+    db, store = make_store()
+    runtime = MultiUserTelegramRuntime(store, EventRouter())
+    client = NumericEntityClient()
+    runtime._clients["123"] = client
+
+    asyncio.run(runtime.send_message("8634599405", "pong", account_id="123"))
+
+    assert client.sent == (8634599405, "pong")

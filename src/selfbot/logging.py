@@ -62,6 +62,14 @@ def configure_logging(level: str = "INFO") -> None:
             handler.setLevel(normalized)
             return
 
+    # GitHub Actions uses the Windows console encoding on Windows runners
+    # (often cp1252). Structured logs are UTF-8 JSON and may contain Persian
+    # text, so force UTF-8 output and replace only unencodable edge cases.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except (AttributeError, OSError):
+        pass
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(normalized)
     handler.setFormatter(JsonFormatter())

@@ -145,3 +145,20 @@ A phase remains non-final until its required evidence is recorded.
 - PR #45 CI run 36845834506 — PASS on Python 3.11 and Python 3.12; compile and pytest steps passed.
 - Added regression coverage for read-only database session semantics and event-handler failure diagnostics.
 - Real runtime /status, /panel, /پنل, linked-account routing and restart/session reuse remain NOT_RUN after PR #45 and require a fresh runtime.
+
+
+## 2026-10-01 — Telegram Runtime Incident Evidence
+- GitHub Actions runtime reached application startup and received Telegram updates.
+- /panel failure was captured with EventRouter correlation ID and exact exception type after PR #45 logging hardening.
+- SQL Server failures observed: ODBC 08S01/08001 connectivity timeout while querying durable state.
+- Telegram transport failure observed: ValueError from Telethon entity lookup for numeric chat ID represented as a string.
+- PR #46 adds regression tests for input-chat entity propagation and numeric chat-ID normalization.
+- CI result for PR #46 must be recorded after GitHub Actions completes; no PASS is claimed yet.
+
+
+## 2026-10-01 — PR #46 PASS
+- CI run 36848464965 passed on Python 3.11 and 3.12.
+- Compileall passed on both versions.
+- Pytest passed on both versions; 105 tests passed in the successful run.
+- Regression coverage includes input chat entity propagation and numeric chat-ID transport.
+- Runtime SQL Server/Tailscale reliability and real Telegram UI interaction remain environment-dependent and are not claimed PASS by CI.

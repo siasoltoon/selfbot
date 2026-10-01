@@ -127,3 +127,15 @@
 - This avoids an unnecessary write-path network operation after reads and reduces failure exposure during transient SQL Server/Tailscale interruptions.
 - Normal write callers retain commit-on-success semantics. Arbitrary transaction replay is still prohibited.
 - Telegram session-store account lookup methods use read_only=True.
+
+
+## Decision — Preserve Telethon input entities for linked-account routing (2026-10-01)
+- Telegram event envelopes must carry the originating Telethon input chat entity when available.
+- Runtime command transport must pass that entity to send_message and open_panel instead of reconstructing a string entity from chat_id.
+- Numeric fallback IDs are normalized to integers only when an input entity is unavailable.
+- This prevents Telethon from interpreting a numeric Telegram ID such as 8634599405 as a username.
+- Do not silently bypass entity resolution failures; they remain explicit runtime errors.
+
+## Decision — UTF-8 structured logs on Windows runners (2026-10-01)
+- Structured JSON logs may contain Persian user-facing text and exception details.
+- Windows/GitHub Actions stdout is explicitly configured for UTF-8 with backslashreplace fallback so diagnostic logging cannot hide the original exception behind a UnicodeEncodeError.

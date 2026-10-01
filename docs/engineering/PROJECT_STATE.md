@@ -139,3 +139,16 @@ Do not mark the entire project release PASS until those evidence items are compl
 - PR #45 merged to main as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
 - No Telegram session, encryption key, SQL credential, firewall exposure or Inline Mode configuration was changed.
 - Next: run a fresh Telegram Bot Runtime from this merged main, then exercise /start, /status, /panel and /پنل in onboarding chat and Saved Messages, followed by controlled restart/session-reuse verification.
+
+
+## 2026-10-01 — Telegram Panel Transport Incident
+- Run evidence identified two independent runtime faults: intermittent SQL Server/Tailscale connectivity during bot-side panel lookup, and Telegram numeric chat IDs being passed as strings to Telethon from linked-account routing.
+- PR #46 addresses the deterministic Telegram transport fault by preserving Telethon input chat entities through the event envelope/router and converting numeric fallback chat IDs to integers.
+- PR #46 also hardens Windows structured logging for UTF-8/Persian exception text.
+- Real SQL Server connectivity remains an environment/runtime reliability item; no fake PASS is recorded.
+
+
+## 2026-10-01 — PR #46 Validation
+- PR #46 CI run 36848464965 passed on Python 3.11 and 3.12 after fixing test transport fakes for the new chat-entity argument.
+- The deterministic linked-account Telegram entity bug and Windows UTF-8 diagnostic failure are code-side fixed and regression-covered.
+- Real Telegram panel interaction remains pending until a fresh runtime is deployed from the merged change.
