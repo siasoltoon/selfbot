@@ -154,3 +154,11 @@ A phase remains non-final until its required evidence is recorded.
 - Telegram transport failure observed: ValueError from Telethon entity lookup for numeric chat ID represented as a string.
 - PR #46 adds regression tests for input-chat entity propagation and numeric chat-ID normalization.
 - CI result for PR #46 must be recorded after GitHub Actions completes; no PASS is claimed yet.
+
+
+## 2026-10-01 — PR #46 PASS
+- CI run 36848464965 passed on Python 3.11 and 3.12.
+- Compileall passed on both versions.
+- Pytest passed on both versions; 105 tests passed in the successful run.
+- Regression coverage includes input chat entity propagation and numeric chat-ID transport.
+- Runtime SQL Server/Tailscale reliability and real Telegram UI interaction remain environment-dependent and are not claimed PASS by CI.
