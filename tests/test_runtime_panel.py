@@ -15,11 +15,11 @@ class FakeTelegram:
         self.sent = []
         self.panels = []
 
-    async def send_message(self, chat_id, text, *, account_id=None):
-        self.sent.append((chat_id, text, account_id))
+    async def send_message(self, chat_id, text, *, account_id=None, chat_entity=None):
+        self.sent.append((chat_id, text, account_id, chat_entity))
 
-    async def open_panel(self, chat_id, *, owner_id, account_id=None):
-        self.panels.append((chat_id, owner_id, account_id))
+    async def open_panel(self, chat_id, *, owner_id, account_id=None, chat_entity=None):
+        self.panels.append((chat_id, owner_id, account_id, chat_entity))
 
 
 def test_database_connect_with_retries_only_retries_acquisition():
@@ -74,7 +74,7 @@ def test_router_opens_panel_for_outgoing_saved_message_and_group_command():
             ))
     asyncio.run(run())
 
-    assert telegram.panels == [("self", "owner", "1"), ("-100123", "owner", "1")]
+    assert telegram.panels == [("self", "owner", "1", None), ("-100123", "owner", "1", None)]
     db.engine.dispose()
 
 
