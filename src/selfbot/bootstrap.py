@@ -24,7 +24,7 @@ def create_runtime() -> Runtime:
     settings = load_settings()
     configure_logging(settings.log_level)
     logger = get_logger(__name__)
-    database = Database(settings.database_url, echo=settings.database_echo)
+    database = Database(\n        settings.database_url,\n        echo=settings.database_echo,\n        connect_retries=settings.database_connect_retries,\n        connect_retry_delay=settings.database_connect_retry_delay,\n    )
     services = CoreServices.create(
         database,
         owner_id=settings.owner_id,
