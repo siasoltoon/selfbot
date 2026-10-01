@@ -125,3 +125,11 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 2. Send /پنل from Saved Messages and verify the panel actually appears.
 3. Exercise nested category/module/sub-capability navigation and one parent/child toggle persistence cycle.
 4. If the panel still fails, capture the new structured DB/Telegram runtime error rather than changing secrets.
+
+
+## 2026-10-01 — Runtime Migration Failure Follow-up
+- Fresh runtime run 36840274511 from merged main failed at Prepare database; Start Telegram bot was skipped.
+- The failure was not a missing database schema and not a Telegram login/session problem. It was a GitHub-runner → Tailscale → SQL Server TCP timeout during Alembic migration startup.
+- PR #43 merged as 02ac2504fb81792e969c636b2153808725e1ce37 and CI 36840788999 is green on Python 3.11/3.12.
+- Next: run a fresh Telegram Bot Runtime from the new main, verify Prepare database passes and Start Telegram bot stays running, then send /پنل in Saved Messages.
+- Do not regenerate Telegram session/secrets or expose SQL Server publicly.
