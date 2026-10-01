@@ -11,6 +11,7 @@ from typing import Any
 from uuid import uuid4
 
 from .errors import AppError, ValidationError, classify_error
+from .logging import get_logger
 
 EventHandler = Callable[["EventEnvelope"], Any]
 
@@ -48,6 +49,7 @@ class EventRouter:
 
     def __init__(self) -> None:
         self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
+        self._logger = get_logger(__name__)
 
     def subscribe(self, event_type: str, handler: EventHandler) -> None:
         if not event_type.strip():
@@ -76,6 +78,22 @@ class EventRouter:
                 handled += 1
             except Exception as exc:
                 errors.append(classify_error(exc))
+                self._logger.error(
+                    "event handler failed",
+                    extra={
+                        "context": {
+                            "event_type": event.event_type,
+                            "event_id": event.event_id,
+                            "correlation_id": event.correlation_id,
+                            "source": event.source,
+                            "handler": getattr(handler, "__qualname__", getattr(handler, "__name__", type(handler).__name__)),
+                            "exception_type": type(exc).__name__,
+                            "exception_module": type(exc).__module__,
+                            "error_message": str(exc)[:500],
+                        }
+                    },
+                    exc_info=True,
+                )
 
         return EventDispatchResult(
             event_id=event.event_id,
