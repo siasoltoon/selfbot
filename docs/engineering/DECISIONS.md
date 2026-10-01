@@ -119,3 +119,11 @@
 - Durable Telegram sessions are encrypted `StringSession` payloads. Runtime restoration must explicitly construct Telethon `StringSession(payload)` before passing it to `TelegramClient`.
 - Never pass a persisted session payload directly as the `session` positional argument because Telethon treats a plain string as a SQLite session filename.
 - Existing encrypted session records remain authoritative; fixing the constructor must not require reauthentication.
+
+
+## Decision — Read-only database transaction semantics (2026-10-01)
+- Database callers must declare read-only intent where the operation performs only SELECT/lookup work.
+- Read-only sessions rollback the implicit SQLAlchemy transaction instead of issuing a network COMMIT.
+- This avoids an unnecessary write-path network operation after reads and reduces failure exposure during transient SQL Server/Tailscale interruptions.
+- Normal write callers retain commit-on-success semantics. Arbitrary transaction replay is still prohibited.
+- Telegram session-store account lookup methods use read_only=True.
