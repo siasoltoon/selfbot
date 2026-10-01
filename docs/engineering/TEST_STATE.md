@@ -136,3 +136,12 @@ A phase remains non-final until its required evidence is recorded.
 - PR #44 merged as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`.
 - Added regression test verifying persisted runtime client construction uses `StringSession`.
 - Real Telegram runtime/panel verification remains NOT_RUN after the fix.
+
+
+## 2026-10-01 — Runtime #22 investigation and PR #45
+- Runtime 36841836347 was cancelled by the operator after commands appeared unresponsive.
+- Post-cancellation logs proved application started and repeated Telethon Got difference updates, so Telegram startup itself was not stuck.
+- The log contained a SQL Server 08S01 Communication link failure during the panel/account lookup path, specifically while SQLAlchemy attempted SQLEndTran.
+- PR #45 CI run 36845834506 — PASS on Python 3.11 and Python 3.12; compile and pytest steps passed.
+- Added regression coverage for read-only database session semantics and event-handler failure diagnostics.
+- Real runtime /status, /panel, /پنل, linked-account routing and restart/session reuse remain NOT_RUN after PR #45 and require a fresh runtime.
