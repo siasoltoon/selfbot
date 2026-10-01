@@ -164,3 +164,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Regression coverage now verifies numeric chat-ID normalization and preservation of the originating Telethon input chat entity through routing.
 - Windows structured logging no longer depends on cp1252 for Persian exception output.
 - Next operator gate: merge, restart Telegram runtime, then verify /panel and /پنل in Saved Messages, onboarding bot chat, private chat and group, followed by toggle persistence.
+
+
+## 2026-10-01 — Diagnostic Task
+- PR #47 adds explicit runner-side diagnostics for Tailscale state, route, ICMP, repeated TCP 1433 connectivity and a redacted SQL Server query.
+- CI run 36850285954 passed on Python 3.11 and 3.12.
+- This is a diagnostic-only unit; it does not claim the external runtime is healthy.
+- Next exact step: merge PR #47, manually run Telegram Bot Runtime from main, and use the diagnostic output to classify the failure as network/Tailscale/firewall, SQL/ODBC/authentication, migration, or Telegram/application-level.

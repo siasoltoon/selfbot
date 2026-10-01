@@ -188,3 +188,12 @@ Only environment-dependent verification remains before final release: real Teleg
 - CI run 36848464965 passed on Python 3.11 and 3.12.
 - Compileall and full pytest passed on both versions.
 - Code-side Telegram panel transport fix is verified; fresh real-runtime verification remains the next gate.
+
+
+## 2026-10-01 — Runtime Connectivity Diagnostics
+- Added PR #47: `test(runtime): add Tailscale and SQL connectivity diagnostics`.
+- Runtime diagnostics now record Runner network identity, Tailscale state, route, repeated ICMP tests, repeated TCP 1433 tests, and a redacted SQLAlchemy `SELECT @@SERVERNAME, DB_NAME()` check.
+- The TCP diagnostic fails early only when all repeated attempts fail, preventing misleading Telegram-level debugging when the database endpoint is unreachable.
+- CI run 36850285954 passed on Python 3.11/3.12.
+- No secrets or external exposure settings were changed.
+- Real runtime evidence remains pending from a manual Telegram Bot Runtime execution.

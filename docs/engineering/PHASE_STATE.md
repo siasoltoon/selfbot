@@ -116,3 +116,10 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - Compileall: PASS on both versions.
 - Pytest: PASS on both versions.
 - Real Telegram panel interaction remains external verification work.
+
+
+## 2026-10-01 — Runtime Network/SQL Diagnostic Gate
+- PR #47 adds pre-start diagnostics for GitHub Runner → Tailscale → SQL Server connectivity and a post-install SQLAlchemy query check.
+- CI run 36850285954: PASS on Python 3.11 and 3.12.
+- The runtime environment gate remains OPEN until the manual Telegram Bot Runtime produces actual TCP 1433 and SQL query evidence.
+- No infrastructure/security settings were changed by this diagnostic unit.

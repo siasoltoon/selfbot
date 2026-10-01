@@ -61,6 +61,58 @@ jobs:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           ping: 100.114.8.105
 
+      - name: Diagnose Tailscale and SQL TCP path
+        shell: pwsh
+        run: |
+          $target = "100.114.8.105"
+          $port = 1433
+
+          Write-Host "=== Runner network identity ==="
+          Get-NetIPConfiguration |
+            Where-Object { $_.IPv4Address } |
+            ForEach-Object {
+              $addresses = ($_.IPv4Address | ForEach-Object { $_.IPv4Address }) -join ", "
+              Write-Host "Interface=$($_.InterfaceAlias) IPv4=$addresses"
+            }
+
+          Write-Host "=== Tailscale client state ==="
+          $tailscale = Get-Command tailscale -ErrorAction SilentlyContinue
+          if ($tailscale) {
+            tailscale version
+            tailscale status
+          } else {
+            Write-Warning "tailscale CLI was not found on PATH; continuing with native Windows diagnostics."
+          }
+
+          Write-Host "=== Route to SQL host ==="
+          Get-NetRoute -DestinationPrefix "$target/32" -ErrorAction SilentlyContinue |
+            Format-Table -AutoSize
+
+          Write-Host "=== ICMP reachability ==="
+          $ping = Test-Connection -ComputerName $target -Count 3 -Quiet -ErrorAction SilentlyContinue
+          Write-Host "PingSuccess=$ping"
+
+          Write-Host "=== TCP 1433 reachability (5 attempts) ==="
+          $tcpResults = @()
+          for ($i = 1; $i -le 5; $i++) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $result = Test-NetConnection -ComputerName $target -Port $port -InformationLevel Detailed -WarningAction SilentlyContinue
+            $sw.Stop()
+            $tcpResults += [pscustomobject]@{
+              Attempt = $i
+              TcpTestSucceeded = $result.TcpTestSucceeded
+              RemoteAddress = $result.RemoteAddress
+              RemotePort = $result.RemotePort
+              SourceAddress = $result.SourceAddress
+              PingSucceeded = $result.PingSucceeded
+              ElapsedMs = $sw.ElapsedMilliseconds
+            }
+          }
+          $tcpResults | Format-Table -AutoSize
+          if (-not ($tcpResults.TcpTestSucceeded -contains $true)) {
+            throw "DIAGNOSTIC FAILURE: TCP $port is unreachable at $target from the GitHub runner."
+          }
+
       - name: Install runtime
         shell: pwsh
         run: |
@@ -76,6 +128,32 @@ jobs:
           } else {
             "DATABASE_URL=${{ secrets.DATABASE_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
+
+      - name: Diagnose SQL Server authentication and query path
+        shell: pwsh
+        run: |
+          python -c @'
+          import os
+          from sqlalchemy import create_engine, text
+          from sqlalchemy.engine import make_url
+
+          raw_url = os.environ["DATABASE_URL"]
+          url = make_url(raw_url)
+          print(f"DATABASE_URL target: {url.render_as_string(hide_password=True)}")
+
+          engine = create_engine(raw_url, pool_pre_ping=True, connect_args={"timeout": 15})
+          try:
+              with engine.connect() as connection:
+                  row = connection.execute(
+                      text("SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name")
+                  ).mappings().one()
+                  print(
+                      "SQL_DIAGNOSTIC_PASS "
+                      f"server={row['server_name']} database={row['database_name']}"
+                  )
+          finally:
+              engine.dispose()
+          '@
 
       - name: Prepare database
         shell: pwsh
