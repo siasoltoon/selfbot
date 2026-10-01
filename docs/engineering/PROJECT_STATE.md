@@ -118,3 +118,12 @@ Do not mark the entire project release PASS until those evidence items are compl
 - PR #43 CI run 36840788999 passed on Python 3.11 and 3.12 after fixing a test-file formatting regression.
 - No Telegram session, encryption key, SQL credential, firewall exposure, or Inline Mode configuration was changed.
 - Real Telegram panel interaction is still NOT PASS because the failed run never reached Start Telegram bot.
+
+
+## 2026-10-01 — Persisted Telegram Session Restore Fix
+- Runtime 36841201279 passed Tailscale and Alembic migration, then failed during `Start Telegram bot` while restoring the encrypted durable Telegram session.
+- Root cause: `MultiUserTelegramRuntime._new_client()` passed the decrypted StringSession payload directly to `TelegramClient`. Telethon interprets a plain string argument as a SQLite session filename, causing `sqlite3.OperationalError: unable to open database file` on the GitHub runner.
+- PR #44 merged as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`; CI 36841546134 passed.
+- `_new_client()` now explicitly wraps persisted payloads with `telethon.sessions.StringSession`.
+- No Telegram session or secrets were regenerated. The existing encrypted database record remains the source of truth.
+- Next: fresh Telegram Bot Runtime from this main commit, then verify startup and real `/پنل` interaction.
