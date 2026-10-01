@@ -197,3 +197,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - CI run 36850285954 passed on Python 3.11/3.12.
 - No secrets or external exposure settings were changed.
 - Real runtime evidence remains pending from a manual Telegram Bot Runtime execution.
+
+## 2026-10-01 — Live runtime SQL/Tailscale diagnostics
+- Investigated Run 36850880589 after operator reported `/status` and `/panel` still did not respond.
+- Full logs showed initial Tailscale + SQL preflight success followed by runtime ODBC 08S01/10060 and 08001/258 failures to 100.114.8.105:1433.
+- Added PR #48 on branch `diagnostic-live-sql-path`: continuous 15-second Tailscale peer and TCP 1433 probe while the bot is running, with diagnostics published even when the runtime is cancelled.
+- No application DB/Telegram credentials or security configuration were changed.
+
