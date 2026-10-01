@@ -106,3 +106,10 @@
 - Use SQLAlchemy pool_pre_ping plus bounded pool_recycle for network-backed databases. SQL Server connection attempts use a bounded driver timeout.
 - Retry count and delay are deployment configuration (DATABASE_CONNECT_RETRIES, DATABASE_CONNECT_RETRY_DELAY) rather than deployment-specific code.
 - A successful local TCP/SQL test does not constitute continuous GitHub-runner reachability evidence; real runtime verification remains required.
+
+
+## Decision — Alembic connection resilience (2026-10-01)
+- Alembic must use the same bounded initial database-connection resilience as the application runtime; a migration path must not bypass the deployment database reliability policy.
+- Retry only connection acquisition before migration work begins. Never catch migration-body failures and replay migrations automatically.
+- SQL Server migration connections use a bounded ODBC login/connect timeout.
+- Runtime workflow exposes DATABASE_CONNECT_RETRIES and DATABASE_CONNECT_RETRY_DELAY explicitly so deployment operators can tune transient network behavior without code changes.
