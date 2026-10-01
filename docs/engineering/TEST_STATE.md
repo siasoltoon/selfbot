@@ -127,3 +127,12 @@ A phase remains non-final until its required evidence is recorded.
 - PR #43 CI 36840788999 — PASS on Python 3.11 and 3.12 after adding migration connection retry coverage and correcting one test formatting regression.
 - PR #43 merge commit: 02ac2504fb81792e969c636b2153808725e1ce37.
 - Real /پنل interaction remains NOT_RUN after PR #43 because the runtime did not reach bot startup.
+
+
+## 2026-10-01 — Persisted Session Restore
+- Runtime 36841201279: FAIL only at Start Telegram bot after database migration succeeded.
+- Exact failure: `sqlite3.OperationalError: unable to open database file` from Telethon `SQLiteSession` because a persisted StringSession payload was passed as a filename.
+- PR #44 CI run 36841546134 — PASS.
+- PR #44 merged as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`.
+- Added regression test verifying persisted runtime client construction uses `StringSession`.
+- Real Telegram runtime/panel verification remains NOT_RUN after the fix.
