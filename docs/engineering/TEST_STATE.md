@@ -111,3 +111,11 @@ A phase remains non-final until its required evidence is recorded.
 - PR #37 CI run 36697168438 passed; PR #37 merged as `65594754cdfed7e2e0cd6006d55c5e464ebaa1d8`.
 - Full local `python -m pytest -q` after the merge: PASS with no failures.
 - The runtime reload smoke test intentionally used a fake Telegram client, so it proves durable session reconstruction but does not replace a real Telegram reconnect test.
+
+
+## 2026-10-01 — Runtime DB Resilience
+- PR #42 CI run 36839640139 — PASS on Python 3.11 and Python 3.12.
+- Compileall passed on both versions.
+- Full pytest passed on both versions after fixing two CI-discovered regressions during implementation: bootstrap newline syntax and backward-compatible Settings constructor defaults.
+- Added regression coverage for environment-configured database retry settings.
+- Real Telegram panel interaction is still NOT PASS; it requires a fresh runtime from merged main and operator-side /پنل verification.
