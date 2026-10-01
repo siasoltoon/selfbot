@@ -152,3 +152,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added regression coverage proving connection acquisition can retry without replaying caller work.
 - PR #43 CI run 36840788999 passed on Python 3.11 and 3.12.
 - PR #43 merged to main as 02ac2504fb81792e969c636b2153808725e1ce37.
+
+
+## 2026-10-01 — Persisted Telegram session restore fix
+- Fresh runtime 36841201279 successfully reached Tailscale, SQL Server migrations, and onboarding-bot startup.
+- Startup then failed because Telethon interpreted the decrypted persisted StringSession as a SQLite filename.
+- PR #44 explicitly wraps persisted payloads with `StringSession` and adds regression coverage.
+- CI 36841546134 passed; PR #44 merged to main as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`.
