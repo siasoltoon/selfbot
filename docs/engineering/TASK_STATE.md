@@ -111,3 +111,17 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Cleanup after the smoke test: PASS.
 - Full local pytest after PR #37 merge: PASS.
 - This task is complete; the active Telegram verification task remains separate and is not marked complete by the SQL Server evidence.
+
+
+## 2026-10-01 — Panel Runtime Failure Investigation and Fix
+- Real runtime /panel did not render because the onboarding bot's InlineQuery handler calls TelegramSessionStore.get_connected(), which requires the external SQL Server.
+- Runtime logs showed ODBC Driver 18 error 08001 / TCP timeout to the private Tailscale SQL endpoint. Local PC tests confirmed SQL Server and port 1433 were reachable from the PC, but that did not prove continuous GitHub-runner reachability.
+- Inline Mode was confirmed enabled; no Telegram session, encryption key, or credential regeneration was required.
+- PR #42 merged as 750ed593ededda0c19ded9ac68dc76701c143689. It adds bounded initial connection retry/backoff, pool recycle/pre-ping resilience, SQL Server connect timeout, and environment configuration.
+- CI run 36839640139: Python 3.11 PASS, Python 3.12 PASS.
+
+## Next Task
+1. Start the Telegram runtime from the merged main.
+2. Send /پنل from Saved Messages and verify the panel actually appears.
+3. Exercise nested category/module/sub-capability navigation and one parent/child toggle persistence cycle.
+4. If the panel still fails, capture the new structured DB/Telegram runtime error rather than changing secrets.
