@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
@@ -16,37 +18,86 @@ class Base(DeclarativeBase):
 
 
 class Database:
-    """Owns the SQLAlchemy engine and session factory."""
+    """Owns the SQLAlchemy engine and session factory.
 
-    def __init__(self, url: str, *, echo: bool = False) -> None:
+    Network-backed databases can briefly disappear (for example while a
+    deployment tunnel reconnects). Retries are limited to initial connection
+    checkout so application writes are never replayed automatically.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        echo: bool = False,
+        connect_retries: int = 3,
+        connect_retry_delay: float = 1.0,
+    ) -> None:
         if not url.strip():
             raise ValueError("database URL must not be empty")
+        if connect_retries < 0:
+            raise ValueError("connect_retries must be non-negative")
+        if connect_retry_delay < 0:
+            raise ValueError("connect_retry_delay must be non-negative")
 
         connect_args: dict[str, Any] = {}
         if url.startswith("sqlite"):
             connect_args["check_same_thread"] = False
+        elif url.startswith("mssql+pyodbc"):
+            connect_args["timeout"] = 10
 
-        self.engine: Engine = create_engine(
-            url,
-            echo=echo,
-            pool_pre_ping=True,
-            connect_args=connect_args,
-        )
+        engine_kwargs: dict[str, Any] = {
+            "echo": echo,
+            "pool_pre_ping": True,
+            "connect_args": connect_args,
+        }
+        if not url.startswith("sqlite"):
+            engine_kwargs["pool_recycle"] = 300
+            engine_kwargs["pool_timeout"] = 30
+
+        self.engine: Engine = create_engine(url, **engine_kwargs)
         self.session_factory = sessionmaker(
             bind=self.engine,
             autoflush=False,
             expire_on_commit=False,
         )
+        self.connect_retries = connect_retries
+        self.connect_retry_delay = connect_retry_delay
+
+    def _acquire_connection(self, session: Session) -> None:
+        """Force pool checkout before caller executes work."""
+        for attempt in range(self.connect_retries + 1):
+            try:
+                session.connection()
+                return
+            except DBAPIError:
+                session.close()
+                if attempt >= self.connect_retries:
+                    raise
+                self.engine.dispose()
+                if self.connect_retry_delay:
+                    time.sleep(self.connect_retry_delay * (2**attempt))
+                session = self.session_factory()
 
     def ping(self) -> bool:
-        with self.engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-        return True
+        for attempt in range(self.connect_retries + 1):
+            try:
+                with self.engine.connect() as connection:
+                    connection.execute(text("SELECT 1"))
+                return True
+            except DBAPIError:
+                if attempt >= self.connect_retries:
+                    raise
+                self.engine.dispose()
+                if self.connect_retry_delay:
+                    time.sleep(self.connect_retry_delay * (2**attempt))
+        return False
 
     @contextmanager
     def session(self) -> Generator[Session, None, None]:
         session = self.session_factory()
         try:
+            self._acquire_connection(session)
             yield session
             session.commit()
         except Exception:
