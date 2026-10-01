@@ -146,3 +146,9 @@ Do not mark the entire project release PASS until those evidence items are compl
 - PR #46 addresses the deterministic Telegram transport fault by preserving Telethon input chat entities through the event envelope/router and converting numeric fallback chat IDs to integers.
 - PR #46 also hardens Windows structured logging for UTF-8/Persian exception text.
 - Real SQL Server connectivity remains an environment/runtime reliability item; no fake PASS is recorded.
+
+
+## 2026-10-01 — PR #46 Validation
+- PR #46 CI run 36848464965 passed on Python 3.11 and 3.12 after fixing test transport fakes for the new chat-entity argument.
+- The deterministic linked-account Telegram entity bug and Windows UTF-8 diagnostic failure are code-side fixed and regression-covered.
+- Real Telegram panel interaction remains pending until a fresh runtime is deployed from the merged change.
