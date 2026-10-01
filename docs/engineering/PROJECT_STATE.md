@@ -98,3 +98,12 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Full local pytest suite after PR #37 merge passed with no failures.
 - PR #37 merged to `main` as `65594754cdfed7e2e0cd6006d55c5e464ebaa1d8`.
 - External SQL Server persistence gate is now PASS. This does not imply the entire project release is PASS; remaining provider, worker, OCR, deployment, backup/recovery, performance and live Telegram routing evidence remains.
+
+
+## 2026-10-01 — Telegram Panel SQL Connectivity Resilience
+- Real runtime logs showed the panel failure path was blocked by transient SQL Server connectivity from the GitHub Actions runner to the operator PC over Tailscale; Inline Mode was confirmed active and panel code-side tests were already green.
+- PR #42 (fix(db): harden runtime against transient SQL connectivity) merged to main as 750ed593ededda0c19ded9ac68dc76701c143689.
+- Database sessions now retry only initial connection checkout with bounded exponential backoff; pooled network connections use pre-ping/recycle and SQL Server connection attempts have a bounded timeout. Application work is never replayed automatically.
+- Retry settings are deployment-configurable through DATABASE_CONNECT_RETRIES and DATABASE_CONNECT_RETRY_DELAY.
+- CI run 36839640139 passed on Python 3.11 and 3.12.
+- This improves resilience to brief DB/Tailscale interruptions but does not prove the home-PC SQL endpoint is continuously reachable for the full GitHub runtime. Real Telegram panel interaction remains pending.
