@@ -127,3 +127,15 @@ Do not mark the entire project release PASS until those evidence items are compl
 - `_new_client()` now explicitly wraps persisted payloads with `telethon.sessions.StringSession`.
 - No Telegram session or secrets were regenerated. The existing encrypted database record remains the source of truth.
 - Next: fresh Telegram Bot Runtime from this main commit, then verify startup and real `/پنل` interaction.
+
+
+## 2026-10-01 — Runtime routing/DB read-path hardening
+- Runtime 36841836347 was cancelled after appearing unresponsive from the operator side.
+- Post-cancellation log inspection showed the application had actually started and Telethon was receiving account/channel updates; the primary observed application failure was a SQL Server communication-link failure during a panel/account lookup transaction commit.
+- Root cause refinement: TelegramSessionStore account lookups performed a SQLAlchemy commit after read-only SELECT work. On a transient SQL Server/Tailscale interruption, that unnecessary network COMMIT could fail an otherwise successful read.
+- PR #45 changed Database.session() to support explicit read_only=True semantics and changed Telegram account lookup paths to rollback rather than commit.
+- PR #45 also added structured logging for event-handler failures, including event/correlation IDs, source, handler and sanitized exception metadata, so Telegram routing failures are no longer silent at the event-router boundary.
+- PR #45 CI run 36845834506 passed on Python 3.11 and 3.12.
+- PR #45 merged to main as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
+- No Telegram session, encryption key, SQL credential, firewall exposure or Inline Mode configuration was changed.
+- Next: run a fresh Telegram Bot Runtime from this merged main, then exercise /start, /status, /panel and /پنل in onboarding chat and Saved Messages, followed by controlled restart/session-reuse verification.
