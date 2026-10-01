@@ -750,9 +750,13 @@ class MultiUserTelegramRuntime:
             return self.client_factory(session, api_id, api_hash)
         try:
             from telethon import TelegramClient
+            from telethon.sessions import StringSession
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
-        return TelegramClient(session, api_id, api_hash)
+        # Telethon treats a plain string as a SQLite session filename.
+        # Persisted sessions are encrypted StringSession payloads, so they
+        # must be wrapped explicitly to restore the authenticated account.
+        return TelegramClient(StringSession(session), api_id, api_hash)
 
     async def start(self, api_id: str, api_hash: str) -> None:
         if not api_id or not api_hash:
