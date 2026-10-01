@@ -16,3 +16,11 @@ def test_sqlite_database_ping_and_transaction(tmp_path):
 
     assert item is not None
     assert item.value == "test"
+
+
+def test_read_only_session_uses_rollback_for_select():
+    database = Database("sqlite:///:memory:")
+    database.create_schema_for_tests()
+
+    with database.session(read_only=True) as session:
+        session.execute(__import__("sqlalchemy").text("SELECT 1"))
