@@ -11,8 +11,22 @@ from .services import CoreServices
 
 class TelegramTransport(Protocol):
     events: object
-    async def send_message(self, chat_id: str | int, text: str, *, account_id: str | None = None): ...
-    async def open_panel(self, chat_id: str | int, *, owner_id: str, account_id: str | None = None): ...
+    async def send_message(
+        self,
+        chat_id: str | int,
+        text: str,
+        *,
+        account_id: str | None = None,
+        chat_entity: object | None = None,
+    ): ...
+    async def open_panel(
+        self,
+        chat_id: str | int,
+        *,
+        owner_id: str,
+        account_id: str | None = None,
+        chat_entity: object | None = None,
+    ): ...
     async def resolve_user_id(self, identifier: str, *, account_id: str | None = None) -> str: ...
 
 
@@ -32,6 +46,7 @@ class TelegramRuntimeRouter:
             event.chat_id or event.actor_id,
             text,
             account_id=account_id,
+            chat_entity=event.payload.get("chat_input_entity"),
         )
 
     @staticmethod
@@ -97,6 +112,7 @@ class TelegramRuntimeRouter:
                     event.chat_id or owner_id,
                     owner_id=owner_id,
                     account_id=account_id,
+                    chat_entity=event.payload.get("chat_input_entity"),
                 )
             except Exception:
                 await self._send(
