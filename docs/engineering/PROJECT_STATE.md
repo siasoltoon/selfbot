@@ -107,3 +107,14 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Retry settings are deployment-configurable through DATABASE_CONNECT_RETRIES and DATABASE_CONNECT_RETRY_DELAY.
 - CI run 36839640139 passed on Python 3.11 and 3.12.
 - This improves resilience to brief DB/Tailscale interruptions but does not prove the home-PC SQL endpoint is continuously reachable for the full GitHub runtime. Real Telegram panel interaction remains pending.
+
+
+## 2026-10-01 — Runtime Migration Connectivity Resilience
+- Runtime workflow run 36840274511 failed during Prepare database, before the Telegram bot started.
+- Root cause was confirmed from the job log: Alembic created a one-shot SQLAlchemy connection to 100.114.8.105:1433 and received ODBC 18 error 08001 / TCP timeout 258.
+- The previously merged PR #42 protected application ORM sessions but did not protect Alembic's separate migration connection path.
+- PR #43 (fix(db): make runtime migrations resilient to transient SQL outages) merged as 02ac2504fb81792e969c636b2153808725e1ce37.
+- Alembic now reuses the bounded pre-work connection retry helper, SQL Server migration connections use a 10-second driver timeout, and runtime retry settings are explicit in the workflow.
+- PR #43 CI run 36840788999 passed on Python 3.11 and 3.12 after fixing a test-file formatting regression.
+- No Telegram session, encryption key, SQL credential, firewall exposure, or Inline Mode configuration was changed.
+- Real Telegram panel interaction is still NOT PASS because the failed run never reached Start Telegram bot.
