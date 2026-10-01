@@ -8,13 +8,52 @@ from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
 class Base(DeclarativeBase):
     """Base class for application ORM models."""
+
+
+@contextmanager
+def connect_with_retries(
+    engine: Engine,
+    *,
+    retries: int = 3,
+    retry_delay: float = 1.0,
+) -> Generator[Connection, None, None]:
+    """Acquire one DB connection with bounded pre-work retries.
+
+    Only connection acquisition is retried. Once a connection has been
+    yielded, exceptions from the caller are never replayed.
+    """
+
+    if retries < 0:
+        raise ValueError("retries must be non-negative")
+    if retry_delay < 0:
+        raise ValueError("retry_delay must be non-negative")
+
+    connection: Connection | None = None
+    for attempt in range(retries + 1):
+        try:
+            connection = engine.connect()
+            break
+        except DBAPIError:
+            if attempt >= retries:
+                raise
+            engine.dispose()
+            if retry_delay:
+                time.sleep(retry_delay * (2**attempt))
+
+    if connection is None:  # pragma: no cover - defensive guard
+        raise RuntimeError("database connection was not acquired")
+
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 class Database:
