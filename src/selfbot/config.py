@@ -36,14 +36,14 @@ class Settings:
     log_level: str
     database_url: str
     database_echo: bool
-    database_connect_retries: int
-    database_connect_retry_delay: float
     telegram_api_id: str | None
     telegram_api_hash: str | None
     telegram_session: str | None
     pc_worker_enabled: bool
     pc_worker_url: str | None
     pc_worker_token: str | None
+    database_connect_retries: int = 3
+    database_connect_retry_delay: float = 1.0
     owner_id: str | None = None
     telegram_session_is_string: bool = True
     telegram_onboarding_bot_token: str | None = None
