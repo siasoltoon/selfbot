@@ -104,7 +104,7 @@ class TelegramSessionStore:
             return record.id
 
     def get_connected(self, owner_user_id: str) -> TelegramAccount:
-        with self.database.session() as db:
+        with self.database.session(read_only=True) as db:
             record = db.scalar(
                 select(TelegramAccount).where(
                     TelegramAccount.owner_user_id == owner_user_id,
@@ -117,7 +117,7 @@ class TelegramSessionStore:
             return record
 
     def list_connected(self) -> list[TelegramAccount]:
-        with self.database.session() as db:
+        with self.database.session(read_only=True) as db:
             records = list(db.scalars(select(TelegramAccount).where(TelegramAccount.status == "connected")))
             for record in records:
                 db.expunge(record)
