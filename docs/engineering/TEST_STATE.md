@@ -162,3 +162,9 @@ A phase remains non-final until its required evidence is recorded.
 - Pytest passed on both versions; 105 tests passed in the successful run.
 - Regression coverage includes input chat entity propagation and numeric chat-ID transport.
 - Runtime SQL Server/Tailscale reliability and real Telegram UI interaction remain environment-dependent and are not claimed PASS by CI.
+
+
+## 2026-10-01 — PR #47 Diagnostic Validation
+- CI run 36850285954: PASS on Python 3.11 and Python 3.12.
+- Diagnostic workflow code is covered by normal compile/test CI, but real GitHub Runner → PC SQL connectivity remains environment-dependent and is NOT claimed PASS by CI.
+- The next evidence source is a manually triggered Telegram Bot Runtime run containing the new Tailscale/TCP/SQL diagnostic output.
