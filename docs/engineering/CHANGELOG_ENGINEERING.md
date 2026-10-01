@@ -135,3 +135,11 @@ Only environment-dependent verification remains before final release: real Teleg
 - Real encrypted session persistence and deterministic runtime reload smoke tests completed successfully.
 - Full local pytest after PR #37 merge passed with no failures.
 - External SQL Server persistence gate is now recorded as PASS; broader final-release evidence remains open.
+
+
+## 2026-10-01 — Telegram runtime database resilience
+- Investigated real /panel failure and traced the panel rendering path through the onboarding bot InlineQuery into durable Telegram-account lookup.
+- Confirmed the observed failure was SQL Server connectivity timeout (08001 / TCP timeout) from the GitHub runtime, not a disabled Inline Mode configuration.
+- PR #42 merged as 750ed593ededda0c19ded9ac68dc76701c143689.
+- Added bounded retry/backoff for initial DB connection checkout, network pool recycling/pre-ping, SQL Server connection timeout, and environment-controlled retry settings.
+- CI run 36839640139 passed on Python 3.11/3.12.
