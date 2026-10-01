@@ -36,6 +36,8 @@ class Settings:
     log_level: str
     database_url: str
     database_echo: bool
+    database_connect_retries: int = 3
+    database_connect_retry_delay: float = 1.0
     telegram_api_id: str | None
     telegram_api_hash: str | None
     telegram_session: str | None
@@ -70,6 +72,16 @@ def load_settings() -> Settings:
         raise ConfigurationError("DATABASE_URL must not be empty")
     if not database_url.startswith(("sqlite://", "postgresql://", "postgresql+", "mssql+pyodbc://")):
         raise ConfigurationError("DATABASE_URL must use SQLite, PostgreSQL, or SQL Server via mssql+pyodbc")
+
+    database_connect_retries = _int_env("DATABASE_CONNECT_RETRIES", 3)
+    if database_connect_retries < 0 or database_connect_retries > 10:
+        raise ConfigurationError("DATABASE_CONNECT_RETRIES must be between 0 and 10")
+    try:
+        database_connect_retry_delay = float(os.getenv("DATABASE_CONNECT_RETRY_DELAY", "1.0"))
+    except ValueError as exc:
+        raise ConfigurationError("DATABASE_CONNECT_RETRY_DELAY must be a number") from exc
+    if database_connect_retry_delay < 0 or database_connect_retry_delay > 30:
+        raise ConfigurationError("DATABASE_CONNECT_RETRY_DELAY must be between 0 and 30")
 
     worker_enabled = _bool_env("PC_WORKER_ENABLED", False)
     worker_url = os.getenv("PC_WORKER_URL")
@@ -108,6 +120,8 @@ def load_settings() -> Settings:
         log_level=log_level,
         database_url=database_url,
         database_echo=_bool_env("DATABASE_ECHO", False),
+        database_connect_retries=database_connect_retries,
+        database_connect_retry_delay=database_connect_retry_delay,
         telegram_api_id=os.getenv("TELEGRAM_API_ID") or None,
         telegram_api_hash=os.getenv("TELEGRAM_API_HASH") or None,
         telegram_session=os.getenv("TELEGRAM_SESSION") or None,
