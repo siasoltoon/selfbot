@@ -140,3 +140,12 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Root cause was confirmed as incorrect Telethon session construction, not SQL connectivity.
 - PR #44 merged as `fd2cbf8c1e9a9b682b942a69546b585310624a7c`; CI 36841546134 PASS.
 - Next: run Telegram Bot Runtime again from current main. Do not change or recreate Telegram secrets/session. If startup stays running, send `/پنل` in Saved Messages.
+
+
+## 2026-10-01 — Active task refinement after Runtime #22
+- Runtime 36841836347 reached application startup and live Telethon update processing, but operator commands appeared unresponsive.
+- Log inspection found a SQL Server communication-link failure during a panel/account lookup and confirmed that event-handler failures lacked sufficient diagnostics.
+- PR #45 merged as 68c7fe619f8926e68efb56eefec6b5a01ce3d39c.
+- Read-only Telegram account lookups no longer issue SQL commits; event-handler failures now emit structured diagnostics with event/correlation context.
+- CI 36845834506 passed on Python 3.11/3.12.
+- Remaining exact next step: fresh runtime from merged main, then real /start, /status, /panel and /پنل tests in onboarding chat and Saved Messages; after that verify controlled restart/session reuse.
