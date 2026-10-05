@@ -197,3 +197,10 @@ Only environment-dependent verification remains before final release: real Teleg
 - CI run 36850285954 passed on Python 3.11/3.12.
 - No secrets or external exposure settings were changed.
 - Real runtime evidence remains pending from a manual Telegram Bot Runtime execution.
+
+
+## 2026-10-05
+- Started Supabase PostgreSQL migration for durable runtime storage.
+- Created PR #49: runtime production database path now targets PostgreSQL, installs the existing psycopg optional dependency, validates the database target without printing credentials, and refuses an absent production `DATABASE_URL`.
+- Added bounded PostgreSQL connection acquisition timeout and configuration regression coverage.
+- Live Supabase evidence remains pending.

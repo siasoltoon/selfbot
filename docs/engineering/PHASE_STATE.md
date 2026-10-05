@@ -123,3 +123,11 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - CI run 36850285954: PASS on Python 3.11 and 3.12.
 - The runtime environment gate remains OPEN until the manual Telegram Bot Runtime produces actual TCP 1433 and SQL query evidence.
 - No infrastructure/security settings were changed by this diagnostic unit.
+
+
+## 2026-10-05 — Supabase PostgreSQL External Database Gate
+- External database migration unit started with Supabase PostgreSQL in Frankfurt.
+- Repository-level PostgreSQL support is already present; no schema rewrite was required after reviewing Alembic revisions 0001-0004.
+- PR #49 moves the production GitHub Actions runtime to PostgreSQL and removes the runtime dependency on Tailscale/SQL Server.
+- CI/code-side validation is required before merge; live Supabase migration and persistence remain external evidence gates.
+- SQL Server/Tailscale must remain available as rollback infrastructure until Supabase runtime verification is complete.

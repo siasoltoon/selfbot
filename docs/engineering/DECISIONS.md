@@ -139,3 +139,11 @@
 ## Decision — UTF-8 structured logs on Windows runners (2026-10-01)
 - Structured JSON logs may contain Persian user-facing text and exception details.
 - Windows/GitHub Actions stdout is explicitly configured for UTF-8 with backslashreplace fallback so diagnostic logging cannot hide the original exception behind a UnicodeEncodeError.
+
+
+## 2026-10-05 — Supabase PostgreSQL as Durable Runtime Database
+- Decision: use Supabase PostgreSQL as the durable external database for the current GitHub Actions runtime instead of exposing the home SQL Server or depending on Tailscale for application database access.
+- Connection method: Supabase Session Pooler, selected because the runtime may operate on IPv4-only infrastructure.
+- Application contract remains `DATABASE_URL`; deployment-specific connectivity stays in environment/configuration rather than core business logic.
+- The migration is staged: keep SQL Server/Tailscale intact until live PostgreSQL migration, persistence and Telegram runtime evidence passes.
+- No database password is stored in source control or engineering state.

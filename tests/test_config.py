@@ -67,3 +67,12 @@ def test_sqlserver_database_scheme_is_allowed(monkeypatch):
     )
     settings = load_settings()
     assert settings.database_url.startswith("mssql+pyodbc://")
+
+
+def test_postgresql_database_scheme_is_allowed(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:password@db.example:5432/postgres",
+    )
+    settings = load_settings()
+    assert settings.database_url.startswith("postgresql+psycopg://")
