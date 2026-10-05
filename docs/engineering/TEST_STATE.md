@@ -168,3 +168,11 @@ A phase remains non-final until its required evidence is recorded.
 - CI run 36850285954: PASS on Python 3.11 and Python 3.12.
 - Diagnostic workflow code is covered by normal compile/test CI, but real GitHub Runner → PC SQL connectivity remains environment-dependent and is NOT claimed PASS by CI.
 - The next evidence source is a manually triggered Telegram Bot Runtime run containing the new Tailscale/TCP/SQL diagnostic output.
+
+
+## 2026-10-05 — Supabase Migration Validation
+- Code-side validation target: Python 3.11/3.12 compileall + full pytest through PR #49.
+- New regression coverage confirms `postgresql+psycopg://` is accepted by configuration.
+- Live validation has NOT RUN yet because the Supabase `DATABASE_URL` secret has not been installed in GitHub Actions.
+- Required live checks: PostgreSQL connectivity diagnostic, `alembic upgrade head`, durable write/read/cleanup, encrypted Telegram session persistence/reload, Telegram runtime startup, `/status`, `/panel` and `/پنل`, controlled restart/session reuse.
+- Do not claim PostgreSQL PASS or remove SQL Server/Tailscale rollback infrastructure before these checks pass.
