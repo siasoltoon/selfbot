@@ -171,3 +171,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - CI run 36850285954 passed on Python 3.11 and 3.12.
 - This is a diagnostic-only unit; it does not claim the external runtime is healthy.
 - Next exact step: merge PR #47, manually run Telegram Bot Runtime from main, and use the diagnostic output to classify the failure as network/Tailscale/firewall, SQL/ODBC/authentication, migration, or Telegram/application-level.
+
+
+## 2026-10-05 — Current Task: Supabase PostgreSQL Migration
+- Status: IN PROGRESS.
+- Completed: repository state inspection; PostgreSQL/Alembic compatibility review; dedicated branch `feat/supabase-postgres-runtime`; PR #49 created; runtime workflow switched to PostgreSQL; bounded PostgreSQL connection timeout added; PostgreSQL config regression test added.
+- Pending: CI green validation; configure GitHub `DATABASE_URL` with the Supabase Session Pooler URI; run Alembic against Supabase; run durable persistence/session smoke test; run Telegram runtime; verify `/status`, `/panel`, `/پنل`, and restart/session reuse; then update deployment/state docs and only after successful evidence retire SQL Server/Tailscale runtime dependency.
+- Security rule: never commit or expose the Supabase database password/complete secret URI.
