@@ -161,3 +161,13 @@ Do not mark the entire project release PASS until those evidence items are compl
 - No secrets are printed and no Telegram session, encryption key, SQL credential, firewall exposure or Inline Mode setting was changed.
 - Real runner-to-PC connectivity is still NOT PASS until a fresh Telegram Bot Runtime execution produces the diagnostic evidence.
 - Next: merge PR #47, trigger Telegram Bot Runtime from main, and inspect the diagnostic block before changing any infrastructure or credentials.
+
+
+## 2026-10-05 — Supabase PostgreSQL Migration Started
+- Supabase project `selfbot-db` was created in Frankfurt by the operator.
+- The selected runtime connection method is Supabase Session Pooler over PostgreSQL/IPv4-compatible infrastructure.
+- Repository inspection confirmed PostgreSQL support already exists through `psycopg[binary]` and generic SQLAlchemy/Alembic metadata; existing revisions `0001` through `0004` use portable SQLAlchemy constructs and do not require a SQL Server-specific schema rewrite.
+- PR #49 (`feat/db: migrate runtime persistence to Supabase PostgreSQL`) moves the GitHub Actions production runtime away from the Tailscale/SQL Server path and adds a redacted PostgreSQL connectivity diagnostic.
+- The runtime now requires `DATABASE_URL` in production instead of silently falling back to ephemeral SQLite.
+- No SQL Server credentials, Telegram session, encryption key, or current PC/Tailscale setup has been removed yet.
+- Live Supabase migration, persistence, Telegram runtime, `/status`, `/panel`, and restart/session-reuse evidence are still NOT PASS until executed with the new Supabase secret.
