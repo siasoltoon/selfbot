@@ -84,6 +84,8 @@ class Database:
             connect_args["check_same_thread"] = False
         elif url.startswith("mssql+pyodbc"):
             connect_args["timeout"] = 10
+        elif url.startswith(("postgresql://", "postgresql+")):
+            connect_args["connect_timeout"] = 15
 
         engine_kwargs: dict[str, Any] = {
             "echo": echo,
