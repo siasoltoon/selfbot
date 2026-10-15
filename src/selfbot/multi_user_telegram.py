@@ -1000,7 +1000,19 @@ class OnboardingBot:
             if not user_id:
                 return
             text = (getattr(event, "raw_text", "") or "").strip()
-            await self._handle(user_id, event, text)
+            started_at = time.perf_counter()
+            try:
+                await self._handle(user_id, event, text)
+            finally:
+                if text.startswith("/"):
+                    self.logger.info(
+                        "telegram onboarding command handled",
+                        extra={"context": {
+                            "command": text.split(maxsplit=1)[0].lower()[:32],
+                            "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                            "user_fingerprint": self.auth._owner_fingerprint(user_id),
+                        }},
+                    )
 
         @self._client.on(events.InlineQuery)
         async def on_inline_query(event: Any) -> None:
@@ -1011,8 +1023,8 @@ class OnboardingBot:
             owner_id = self._verify_panel_token(token[6:])
             if owner_id is None: await event.answer([], cache_time=0); return
             try:
-                self.store.get_connected(owner_id)
-                text, buttons = self._panel_page(owner_id, "home")
+                await asyncio.to_thread(self.store.get_connected, owner_id)
+                text, buttons = await asyncio.to_thread(self._panel_page, owner_id, "home")
                 result = await event.builder.article("🤖 Selfbot Control Center", text=text, buttons=buttons)
                 await event.answer([result], cache_time=0, private=True)
             except Exception as exc:
@@ -1034,12 +1046,12 @@ class OnboardingBot:
                 message = None
                 if action == "toggle":
                     if target is None: raise ValueError("missing capability")
-                    current = self.capabilities.is_enabled(owner_id, target)
-                    self.capabilities.set_enabled(owner_id, target, not current)
+                    current = await asyncio.to_thread(self.capabilities.is_enabled, owner_id, target)
+                    await asyncio.to_thread(self.capabilities.set_enabled, owner_id, target, not current)
                     message = "قابلیت روشن شد." if not current else "قابلیت خاموش شد."
                 elif action not in {"home", "category", "cap", "system"}: raise ValueError("unknown panel action")
                 page = "home" if action == "home" else "system" if action == "system" else f"{action}:{target}" if target else "home"
-                text, buttons = self._panel_page(owner_id, page)
+                text, buttons = await asyncio.to_thread(self._panel_page, owner_id, page)
                 await event.edit(text, buttons=buttons)
                 await event.answer(message or "صفحه به‌روزرسانی شد.")
             except Exception as exc: await event.answer(f"عملیات انجام نشد: {type(exc).__name__}", alert=True)
@@ -1065,14 +1077,19 @@ class OnboardingBot:
         if self.panel is None or self.panel_token_factory is None: raise DependencyError("panel service is not configured", retryable=False)
         token = self.panel_token_factory(owner_id); snapshot = self.capabilities.snapshot(owner_id)
         buttons: list[list[Any]] = []; row: list[Any] = []
+        def category_counts(category_id: str) -> tuple[int, int]:
+            roots = self.panel.roots(category_id)
+            return sum(1 for item in roots if snapshot[item.capability_id]), len(roots)
         def add(text: str, action: str, target: str | None = None) -> None:
             nonlocal row; row.append(self._panel_button(text, token, action, target))
             if len(row) == 2: buttons.append(row); row = []
         if page == "home":
-            enabled, total = self.panel.summary(owner_id)
+            toggleable = [item for item in self.capabilities.definitions() if item.toggleable]
+            enabled = sum(1 for item in toggleable if snapshot[item.capability_id])
+            total = len(toggleable)
             lines = ["🤖 Selfbot Control Center", "", "🟢 سیستم فعال", f"قابلیت‌های قابل مدیریت: {enabled}/{total} روشن", "", "یک بخش را انتخاب کن:"]
             for category in self.panel.categories():
-                ce, ct = self.panel.category_stats(owner_id, category.category_id)
+                ce, ct = category_counts(category.category_id)
                 if category.category_id == "system":
                     add(category.title, "system")
                 else:
@@ -1101,9 +1118,11 @@ class OnboardingBot:
 
         if page.startswith("category:"):
             category_id = page.split(":", 1)[1]; category = self.panel.category(category_id)
-            enabled, total = self.panel.category_stats(owner_id, category_id)
+            roots = self.panel.roots(category_id)
+            enabled = sum(1 for item in roots if snapshot[item.capability_id])
+            total = len(roots)
             lines = [category.title, "", category.description, f"وضعیت: {enabled}/{total} قابلیت اصلی روشن", "", "ماژول را برای ورود به زیرمنو انتخاب کن:"]
-            for item in self.panel.roots(category_id):
+            for item in roots:
                 marker = "🟢" if snapshot[item.capability_id] else "⚪"; children = self.panel.children(item.capability_id)
                 suffix = f" · {len(children)} زیرقابلیت" if children else ""; add(f"{marker} {item.title}{suffix}", "cap", item.capability_id)
             if row: buttons.append(row)
@@ -1112,7 +1131,7 @@ class OnboardingBot:
         if page == "cap:status":
             lines = ["📊 وضعیت کلی Selfbot", ""]
             for category in self.panel.categories():
-                enabled, total = self.panel.category_stats(owner_id, category.category_id); lines.append(f"{category.title}: {enabled}/{total}")
+                enabled, total = category_counts(category.category_id); lines.append(f"{category.title}: {enabled}/{total}")
             return "\n".join(lines), [[self._panel_button("🏠 منوی اصلی", token, "home")]]
         if page.startswith("cap:"):
             capability_id = page.split(":", 1)[1]; item = self.capabilities.definition(capability_id)
@@ -1192,8 +1211,8 @@ class OnboardingBot:
                 await event.reply("پنل قابلیت‌ها پیکربندی نشده است.")
                 return
             try:
-                self.store.get_connected(user_id)
-                text, buttons = self._panel_view(user_id)
+                await asyncio.to_thread(self.store.get_connected, user_id)
+                text, buttons = await asyncio.to_thread(self._panel_view, user_id)
                 await event.reply(text, buttons=buttons)
             except NotFoundError:
                 await event.reply("ابتدا اکانت تلگرام را با /connect متصل کن.")
@@ -1228,7 +1247,7 @@ class OnboardingBot:
             return
         if lower == "/status":
             try:
-                record = self.store.get_connected(user_id)
+                record = await asyncio.to_thread(self.store.get_connected, user_id)
             except NotFoundError:
                 await event.reply("اکانت تلگرام متصل نیست.")
             else:
