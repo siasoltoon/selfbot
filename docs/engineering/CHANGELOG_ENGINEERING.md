@@ -226,3 +226,8 @@ Only environment-dependent verification remains before final release: real Teleg
 ### Validation — Telegram responsiveness follow-up
 - CI run `38718072323` passed on Python 3.11 and 3.12 after the panel snapshot, thread-offload, SQLite test-pool, and command timing changes.
 - Live runtime latency measurement is still required before claiming a measured speedup.
+
+
+## 2026-10-15 — Fix unresponsive panel buttons
+- Rendered the initial inline panel without waiting for remote database reads, acknowledged callbacks before database work, corrected toggle navigation, and added safe callback failure reporting.
+- Added regression tests for page routing and database-free initial panel rendering. CI run `38720998500` passed on Python 3.11 and 3.12; live runtime verification remains pending.
