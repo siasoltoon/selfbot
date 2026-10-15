@@ -1,5 +1,6 @@
 from selfbot.config import load_settings
 from selfbot.errors import ConfigurationError
+import pytest
 
 
 def test_defaults(monkeypatch):
@@ -76,3 +77,47 @@ def test_postgresql_database_scheme_is_allowed(monkeypatch):
     )
     settings = load_settings()
     assert settings.database_url.startswith("postgresql+psycopg://")
+
+
+def test_telegram_connection_settings_defaults_and_overrides(monkeypatch):
+    for key in [
+        "TELEGRAM_CONNECTION_TIMEOUT",
+        "TELEGRAM_CONNECTION_RETRIES",
+        "TELEGRAM_RETRY_DELAY",
+        "TELEGRAM_REQUEST_RETRIES",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+    defaults = load_settings()
+    assert defaults.telegram_connection_timeout == 10.0
+    assert defaults.telegram_connection_retries == 3
+    assert defaults.telegram_retry_delay == 1.0
+    assert defaults.telegram_request_retries == 3
+
+    monkeypatch.setenv("TELEGRAM_CONNECTION_TIMEOUT", "15")
+    monkeypatch.setenv("TELEGRAM_CONNECTION_RETRIES", "4")
+    monkeypatch.setenv("TELEGRAM_RETRY_DELAY", "2.5")
+    monkeypatch.setenv("TELEGRAM_REQUEST_RETRIES", "2")
+    configured = load_settings()
+    assert configured.telegram_connection_timeout == 15.0
+    assert configured.telegram_connection_retries == 4
+    assert configured.telegram_retry_delay == 2.5
+    assert configured.telegram_request_retries == 2
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("TELEGRAM_CONNECTION_TIMEOUT", "0"),
+        ("TELEGRAM_CONNECTION_TIMEOUT", "61"),
+        ("TELEGRAM_CONNECTION_RETRIES", "-1"),
+        ("TELEGRAM_CONNECTION_RETRIES", "11"),
+        ("TELEGRAM_RETRY_DELAY", "-1"),
+        ("TELEGRAM_RETRY_DELAY", "31"),
+        ("TELEGRAM_REQUEST_RETRIES", "-1"),
+        ("TELEGRAM_REQUEST_RETRIES", "11"),
+    ],
+)
+def test_telegram_connection_settings_reject_out_of_range_values(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ConfigurationError):
+        load_settings()
