@@ -88,8 +88,19 @@ def create_application(runtime: Runtime) -> Application:
             raise ConfigurationError("Telegram API credentials are required for multi-user mode")
         store = TelegramSessionStore(runtime.database, SessionCipher(runtime.settings.telegram_session_encryption_key))
         signer = PanelTokenSigner(runtime.settings.telegram_session_encryption_key)
-        auth = TelegramAuthenticationService(runtime.settings.telegram_api_id, runtime.settings.telegram_api_hash, store)
-        telegram = MultiUserTelegramRuntime(store, runtime.services.events)
+        telegram_options = {
+            "connection_timeout": runtime.settings.telegram_connection_timeout,
+            "connection_retries": runtime.settings.telegram_connection_retries,
+            "retry_delay": runtime.settings.telegram_retry_delay,
+            "request_retries": runtime.settings.telegram_request_retries,
+        }
+        auth = TelegramAuthenticationService(
+            runtime.settings.telegram_api_id,
+            runtime.settings.telegram_api_hash,
+            store,
+            **telegram_options,
+        )
+        telegram = MultiUserTelegramRuntime(store, runtime.services.events, **telegram_options)
         onboarding = OnboardingBot(
             runtime.settings.telegram_onboarding_bot_token,
             runtime.settings.telegram_api_id,
@@ -98,6 +109,7 @@ def create_application(runtime: Runtime) -> Application:
             store,
             runtime.services.capabilities,
             signer.issue,
+            **telegram_options,
         )
         onboarding.configure_panel_security(signer.issue, signer.verify)
         router = TelegramRuntimeRouter(
