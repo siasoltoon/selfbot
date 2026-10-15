@@ -191,3 +191,8 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Database-backed panel rendering, account-status reads, capability gates, QR account-list reads, linked-session startup reads, session persistence, and revoke operations are moved to `asyncio.to_thread` at async Telegram boundaries to avoid blocking the shared event loop during database waits.
 - Added structured elapsed-time logging for onboarding slash commands (command name, elapsed milliseconds, hashed user fingerprint; message contents are not logged).
 - This is a targeted responsiveness improvement, not a claim that Telegram network outages are solved. Live latency needs a fresh runtime measurement.
+
+
+### CI validation update — Telegram response latency
+- PR #50 head validation run `38718072323` passed both Python 3.11 and 3.12, including source compilation and the full pytest suite after the response-latency changes.
+- Live `/start`, `/status`, `/panel`, `/پنل` latency and reconnect recovery remain pending external runtime verification.
