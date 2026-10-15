@@ -217,3 +217,9 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - `MessageNotModifiedError` is now treated as an idempotent no-op rather than a failed panel action.
 - Regression coverage added for long capability targets, payload size, compact/legacy decoding. CI run `38723195343` passed on Python 3.11 and 3.12.
 - Live Telegram verification is still required after a fresh runtime: navigate categories, open long-ID modules, toggle one capability and verify persistence. Do not mark panel interaction PASS based on CI alone.
+
+## 2026-10-16 — Fix panel snapshot N+1 database reads
+- Root cause: `CapabilityService.snapshot()` performed one durable state lookup, then called `is_enabled()` for every child capability; each child call fetched the same owner state again. Remote database latency multiplied into dozens of round trips during `/panel`, `/status`, and callback page rendering.
+- Replaced repeated lookups with one `_record(owner_id)` read and in-memory parent-state resolution. This preserves the previous immediate-parent gating semantics.
+- Added `test_capability_snapshot_reads_durable_state_once` and callback lifecycle diagnostics (`callback_received`, `callback_acknowledged`, `callback_page_rendered`, `callback_completed`).
+- CI run `38813684030`: PASS on Python 3.11 and 3.12. Live Telegram validation is still pending.
