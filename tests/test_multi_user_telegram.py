@@ -301,3 +301,43 @@ def test_send_message_converts_numeric_chat_ids_to_integer_entities():
     asyncio.run(runtime.send_message("8634599405", "pong", account_id="123"))
 
     assert client.sent == (8634599405, "pong")
+
+
+def test_telegram_runtime_uses_bounded_reconnect_policy():
+    db, store = make_store()
+    runtime = MultiUserTelegramRuntime(
+        store,
+        EventRouter(),
+        connection_timeout=12.0,
+        connection_retries=2,
+        retry_delay=0.5,
+        request_retries=1,
+    )
+    assert runtime._client_options == {
+        "timeout": 12.0,
+        "connection_retries": 2,
+        "retry_delay": 0.5,
+        "request_retries": 1,
+        "auto_reconnect": True,
+    }
+
+
+def test_authentication_uses_bounded_reconnect_policy():
+    db, store = make_store()
+    auth = TelegramAuthenticationService(
+        "12345",
+        "hash",
+        store,
+        client_factory=lambda *_: FakeClient(),
+        connection_timeout=8.0,
+        connection_retries=4,
+        retry_delay=2.0,
+        request_retries=2,
+    )
+    assert auth._client_options == {
+        "timeout": 8.0,
+        "connection_retries": 4,
+        "retry_delay": 2.0,
+        "request_retries": 2,
+        "auto_reconnect": True,
+    }
