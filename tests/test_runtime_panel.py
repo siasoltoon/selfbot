@@ -309,3 +309,39 @@ def test_fast_panel_home_does_not_query_capability_database():
 
     assert "پنل آماده است" in text
     assert len(buttons) >= 4
+
+def test_panel_callback_data_is_compact_for_long_capability_ids():
+    from selfbot.multi_user_telegram import OnboardingBot
+    from selfbot.panel import PanelService
+
+    db = Database("sqlite+pysqlite:///:memory:")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    bot = OnboardingBot.__new__(OnboardingBot)
+    bot.capabilities = capabilities
+    bot.panel = PanelService(capabilities)
+    bot.panel_token_factory = lambda owner_id: "x" * 31
+    bot.store = type("Store", (), {"get_connected": lambda self, owner_id: object()})()
+
+    category_text, category_buttons = bot._panel_page("owner", "category:myoi_auto")
+    child_text, child_buttons = bot._panel_page("owner", "cap:panel_auto_factory")
+    all_buttons = [button for row in category_buttons + child_buttons for button in row]
+
+    assert "خودکار" in category_text
+    assert "کارخانه" in child_text
+    assert all(len(button.data) <= 64 for button in all_buttons)
+    assert any(
+        OnboardingBot._decode_panel_target(button.data.decode().split("|")[-1]) == "panel_auto_factory_range"
+        for button in all_buttons
+        if button.data.decode().startswith("panel|") and len(button.data.decode().split("|")) == 4
+    )
+    db.engine.dispose()
+
+
+def test_panel_target_codec_supports_compact_and_legacy_targets():
+    from selfbot.multi_user_telegram import OnboardingBot
+
+    encoded = OnboardingBot._encode_panel_target("panel_auto_factory_range")
+    assert len(encoded) <= 2
+    assert OnboardingBot._decode_panel_target(encoded) == "panel_auto_factory_range"
+    assert OnboardingBot._decode_panel_target("myoi_auto") == "myoi_auto"
