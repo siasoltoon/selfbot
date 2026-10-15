@@ -215,5 +215,5 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Added compact deterministic base-36 target aliases for panel category/capability IDs while preserving owner-token verification and compatibility with already-rendered legacy target values.
 - Added an explicit UTF-8 byte-length guard before creating inline buttons.
 - `MessageNotModifiedError` is now treated as an idempotent no-op rather than a failed panel action.
-- Regression coverage added for long capability targets, payload size, compact/legacy decoding. CI validation is pending.
+- Regression coverage added for long capability targets, payload size, compact/legacy decoding. CI run `38723195343` passed on Python 3.11 and 3.12.
 - Live Telegram verification is still required after a fresh runtime: navigate categories, open long-ID modules, toggle one capability and verify persistence. Do not mark panel interaction PASS based on CI alone.
