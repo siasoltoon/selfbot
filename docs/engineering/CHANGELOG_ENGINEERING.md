@@ -214,3 +214,10 @@ Only environment-dependent verification remains before final release: real Teleg
 
 ### Validation update — 2026-10-15
 - PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compileall and full pytest). Live Telegram reconnect/latency remains an external verification gate.
+
+
+## 2026-10-15 — Telegram responsiveness follow-up
+- Reused one capability snapshot for panel counts to avoid repeated remote database reads.
+- Moved blocking store/capability reads and writes off async Telegram handlers' event loop at selected latency-sensitive boundaries.
+- Added privacy-safe elapsed-time logging for onboarding slash commands.
+- Validation pending for this follow-up; no live latency improvement is claimed before CI and runtime measurement.
