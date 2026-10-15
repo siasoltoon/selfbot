@@ -329,14 +329,24 @@ class CapabilityService:
         return bool(enabled)
 
     def snapshot(self, owner_id: str) -> dict[str, bool]:
+        """Read the owner's durable state once and resolve the full registry in memory.
+
+        Calling is_enabled() for every child here used to re-query the remote
+        domain store for every capability. With a remote database that turned a
+        single panel render into dozens of network round trips.
+        """
         state = self._record(owner_id).state
         enabled = state.get("enabled", {})
-        return {
-            item.capability_id: self.is_enabled(owner_id, item.capability_id)
-            if item.parent_id
-            else bool(enabled.get(item.capability_id, item.default_enabled))
-            for item in CAPABILITIES
-        }
+        definitions = {item.capability_id: item for item in CAPABILITIES}
+        snapshot: dict[str, bool] = {}
+        for item in CAPABILITIES:
+            value = bool(enabled.get(item.capability_id, item.default_enabled))
+            if item.parent_id:
+                parent = definitions[item.parent_id]
+                parent_enabled = bool(enabled.get(parent.capability_id, parent.default_enabled))
+                value = value and parent_enabled
+            snapshot[item.capability_id] = value
+        return snapshot
 
     def require(self, owner_id: str, capability_id: str) -> None:
         if not self.is_enabled(owner_id, capability_id):
