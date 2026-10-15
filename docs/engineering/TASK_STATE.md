@@ -185,3 +185,8 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Added configurable connection timeout/retry controls and wired them to onboarding, QR auth, and linked-account Telegram clients.
 - Added config range/default/override tests and runtime policy tests.
 - Next: review branch diff, run CI, fix any regression, then use a fresh runtime to test /start, /status, /panel, /پنل, linked-account routing and restart/session reuse. Live responsiveness remains unverified.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compile and full pytest).
+- The code change is CI-validated; live Telegram responsiveness and restart/session reuse remain open external checks. Do not report the delay as definitively fixed until those checks are observed.
