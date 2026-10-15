@@ -150,6 +150,10 @@ class TelegramAuthenticationService:
         *,
         client_factory: Callable[[str, int, str], AuthClient] | None = None,
         ttl_seconds: int = 600,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         if not api_id or not api_hash:
             raise ConfigurationError("Telegram API credentials are required")
@@ -158,6 +162,13 @@ class TelegramAuthenticationService:
         self.store = store
         self.client_factory = client_factory
         self.ttl_seconds = ttl_seconds
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self._pending: dict[str, PendingLogin] = {}
         self._pending_qr: dict[str, PendingQRLogin] = {}
         self._lock = asyncio.Lock()
@@ -190,7 +201,7 @@ class TelegramAuthenticationService:
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
         from telethon.sessions import StringSession
-        return TelegramClient(StringSession(), self.api_id, self.api_hash)
+        return TelegramClient(StringSession(), self.api_id, self.api_hash, **self._client_options)
 
     @staticmethod
     def _normalize_phone(phone: str) -> str:
@@ -737,10 +748,21 @@ class MultiUserTelegramRuntime:
         events: EventRouter,
         *,
         client_factory: Callable[[str, int, str], Any] | None = None,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         self.store = store
         self.events = events
         self.client_factory = client_factory
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self._clients: dict[str, Any] = {}
         self._panel_bot_username: str | None = None
         self._panel_token_factory: Callable[[str], str] | None = None
@@ -756,7 +778,7 @@ class MultiUserTelegramRuntime:
         # Telethon treats a plain string as a SQLite session filename.
         # Persisted sessions are encrypted StringSession payloads, so they
         # must be wrapped explicitly to restore the authenticated account.
-        return TelegramClient(StringSession(session), api_id, api_hash)
+        return TelegramClient(StringSession(session), api_id, api_hash, **self._client_options)
 
     async def start(self, api_id: str, api_hash: str) -> None:
         if not api_id or not api_hash:
@@ -929,6 +951,10 @@ class OnboardingBot:
         store: TelegramSessionStore,
         capabilities: Any | None = None,
         panel_token_factory: Callable[[str], str] | None = None,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         if not token.strip():
             raise ConfigurationError("TELEGRAM_ONBOARDING_BOT_TOKEN is required")
@@ -939,6 +965,13 @@ class OnboardingBot:
         self.store = store
         self.capabilities = capabilities
         self.panel_token_factory = panel_token_factory
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self.panel = PanelService(capabilities) if capabilities is not None else None
         self._client: Any = None
         self.username: str | None = None
@@ -955,7 +988,7 @@ class OnboardingBot:
             from telethon import TelegramClient, events
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
-        self._client = TelegramClient(None, self.api_id, self.api_hash)
+        self._client = TelegramClient(None, self.api_id, self.api_hash, **self._client_options)
         await self._client.start(bot_token=self.token)
         me = await self._client.get_me()
         self.username = getattr(me, "username", None)
