@@ -295,7 +295,8 @@ class TelegramAuthenticationService:
             try:
                 await client.connect()
                 ignored_ids: list[int] = []
-                for record in self.store.list_connected():
+                connected_records = await asyncio.to_thread(self.store.list_connected)
+                for record in connected_records:
                     try:
                         ignored_ids.append(int(record.telegram_account_id))
                     except ValueError:
@@ -691,7 +692,7 @@ class TelegramAuthenticationService:
         if not isinstance(session, str) or not session.strip():
             raise DependencyError("Telegram login succeeded but a persistent StringSession was unavailable", retryable=False)
         try:
-            self.store.save(owner_user_id, account_id, session)
+            await asyncio.to_thread(self.store.save, owner_user_id, account_id, session)
         except Exception as exc:
             raise DependencyError(
                 "Telegram login succeeded but durable session storage failed",
@@ -783,8 +784,9 @@ class MultiUserTelegramRuntime:
     async def start(self, api_id: str, api_hash: str) -> None:
         if not api_id or not api_hash:
             raise ConfigurationError("Telegram API credentials are required")
-        for record in self.store.list_connected():
-            session = self.store.decrypt(record)
+        records = await asyncio.to_thread(self.store.list_connected)
+        for record in records:
+            session = await asyncio.to_thread(self.store.decrypt, record)
             client = self._new_client(session, int(api_id), api_hash)
             try:
                 result = client.connect()
@@ -1258,7 +1260,7 @@ class OnboardingBot:
             if watcher and not watcher.done():
                 watcher.cancel()
             await self.auth.cancel(user_id)
-            count = self.store.revoke(user_id)
+            count = await asyncio.to_thread(self.store.revoke, user_id)
             self._states.pop(user_id, None)
             await event.reply("اتصال لغو شد." if count == 0 else "اتصال اکانت قطع شد. برای اتصال دوباره /connect را بزن.")
             return
