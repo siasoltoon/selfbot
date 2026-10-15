@@ -210,3 +210,7 @@ Only environment-dependent verification remains before final release: real Teleg
 - Investigated the previous long-running GitHub Actions runtime log; PostgreSQL diagnostics and migrations succeeded, and Telethon later resumed update processing after reconnect activity.
 - Added validated environment settings for Telethon connection timeout, connection retries, retry delay, and request retries; wired them to onboarding, QR login and persisted account clients.
 - Added config validation and reconnect-policy regression tests. CI/live runtime verification pending.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compileall and full pytest). Live Telegram reconnect/latency remains an external verification gate.
