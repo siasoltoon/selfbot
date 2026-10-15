@@ -1040,25 +1040,41 @@ class OnboardingBot:
             owner_id = self._verify_panel_token(token[6:])
             if owner_id is None: await event.answer([], cache_time=0); return
             try:
-                await asyncio.to_thread(self.store.get_connected, owner_id)
-                text, buttons = await asyncio.to_thread(self._panel_page, owner_id, "home")
+                # Inline query answers have a short server-side deadline. Render a
+                # database-free landing page so remote DB latency cannot invalidate
+                # the query ID before Telegram receives the result.
+                text, buttons = self._panel_home_fast(owner_id)
                 result = await event.builder.article("🤖 Selfbot Control Center", text=text, buttons=buttons)
                 await event.answer([result], cache_time=0, private=True)
             except Exception as exc:
                 self.logger.warning("telegram capability panel failed", extra={"context": {"stage": "inline_panel", "exception_type": type(exc).__name__, "error_message": self.auth._safe_exception_message(exc)}})
-                await event.answer([], cache_time=0)
+                try:
+                    await event.answer([], cache_time=0)
+                except Exception:
+                    self.logger.info("inline query expired before fallback answer", extra={"context":{"stage":"inline_panel_fallback","exception_type":type(exc).__name__}})
 
         @self._client.on(events.CallbackQuery)
         async def on_callback(event: Any) -> None:
             data = bytes(getattr(event, "data", b"") or b"").decode("utf-8", "ignore")
             if not data.startswith("panel|"): return
             parts = data.split("|", 3)
-            if len(parts) < 3: await event.answer("درخواست نامعتبر است.", alert=True); return
+            if len(parts) < 3:
+                await event.answer("درخواست نامعتبر است.", alert=True); return
             owner_id = self._verify_panel_token(parts[1])
-            if owner_id is None: await event.answer("نشست پنل معتبر نیست.", alert=True); return
+            if owner_id is None:
+                await event.answer("نشست پنل معتبر نیست.", alert=True); return
             sender = str(getattr(event, "sender_id", "") or "")
-            if sender != owner_id: await event.answer("این پنل متعلق به شما نیست.", alert=True); return
+            if sender != owner_id:
+                await event.answer("این پنل متعلق به شما نیست.", alert=True); return
             action = parts[2]; target = parts[3] if len(parts) == 4 else None
+            # Acknowledge before any remote database access: callback query IDs
+            # expire quickly and must not wait for Supabase/database latency.
+            try:
+                await event.answer("در حال پردازش…")
+            except Exception as exc:
+                self.logger.info("telegram panel callback acknowledgement failed", extra={"context":{
+                    "stage":"callback_ack","exception_type":type(exc).__name__
+                }})
             try:
                 message = None
                 if action == "toggle":
@@ -1066,12 +1082,24 @@ class OnboardingBot:
                     current = await asyncio.to_thread(self.capabilities.is_enabled, owner_id, target)
                     await asyncio.to_thread(self.capabilities.set_enabled, owner_id, target, not current)
                     message = "قابلیت روشن شد." if not current else "قابلیت خاموش شد."
-                elif action not in {"home", "category", "cap", "system"}: raise ValueError("unknown panel action")
-                page = "home" if action == "home" else "system" if action == "system" else f"{action}:{target}" if target else "home"
+                elif action not in {"home", "category", "cap", "system"}:
+                    raise ValueError("unknown panel action")
+                page = self._panel_page_for_action(action, target)
                 text, buttons = await asyncio.to_thread(self._panel_page, owner_id, page)
+                if message:
+                    text = f"{message}\\n\\n{text}"
                 await event.edit(text, buttons=buttons)
-                await event.answer(message or "صفحه به‌روزرسانی شد.")
-            except Exception as exc: await event.answer(f"عملیات انجام نشد: {type(exc).__name__}", alert=True)
+            except Exception as exc:
+                self.logger.warning("telegram panel callback failed", extra={"context":{
+                    "stage":"callback_processing","action":action,"exception_type":type(exc).__name__,
+                    "error_message":self.auth._safe_exception_message(exc)
+                }})
+                try:
+                    await event.edit(f"عملیات انجام نشد ({type(exc).__name__}). دوباره تلاش کن.")
+                except Exception as edit_exc:
+                    self.logger.warning("telegram panel callback error display failed", extra={"context":{
+                        "stage":"callback_error_display","exception_type":type(edit_exc).__name__
+                    }})
 
         self._started = True
         self.logger.info("Telegram onboarding bot started")
@@ -1089,6 +1117,41 @@ class OnboardingBot:
         from telethon import Button
         data = f"panel|{token}|{action}" + (f"|{target}" if target else "")
         return Button.inline(text, data)
+
+    @staticmethod
+    def _panel_page_for_action(action: str, target: str | None) -> str:
+        """Map an inline-button action to the page shown after it completes."""
+        if action == "home":
+            return "home"
+        if action == "system":
+            return "system"
+        if action == "toggle":
+            if not target:
+                raise ValueError("missing capability")
+            return f"cap:{target}"
+        if action in {"category", "cap"}:
+            return f"{action}:{target}" if target else "home"
+        raise ValueError("unknown panel action")
+
+    def _panel_home_fast(self, owner_id: str) -> tuple[str, list[list[Any]]]:
+        """Build the initial inline panel without a remote database round trip."""
+        if self.panel is None or self.panel_token_factory is None:
+            raise DependencyError("panel service is not configured", retryable=False)
+        token = self.panel_token_factory(owner_id)
+        buttons: list[list[Any]] = []
+        row: list[Any] = []
+        for category in self.panel.categories():
+            button = self._panel_button(category.title, token,
+                "system" if category.category_id == "system" else "category",
+                None if category.category_id == "system" else category.category_id)
+            row.append(button)
+            if len(row) == 2:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+        buttons.append([self._panel_button("📊 وضعیت کلی", token, "cap", "status")])
+        return "🤖 Selfbot Control Center\\n\\n🟢 پنل آماده است. یک بخش را انتخاب کن:", buttons
 
     def _panel_page(self, owner_id: str, page: str) -> tuple[str, list[list[Any]]]:
         if self.panel is None or self.panel_token_factory is None: raise DependencyError("panel service is not configured", retryable=False)
