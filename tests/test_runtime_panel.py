@@ -354,3 +354,33 @@ def test_panel_target_codec_supports_compact_and_legacy_targets():
     assert len(encoded) <= 2
     assert OnboardingBot._decode_panel_target(encoded) == "panel_auto_factory_range"
     assert OnboardingBot._decode_panel_target("myoi_auto") == "myoi_auto"
+
+
+def test_capability_snapshot_reads_durable_state_once(monkeypatch):
+    from selfbot.capabilities import CapabilityService
+    from selfbot.db import Database
+    from selfbot.domain_store import DomainStore
+
+    db = Database("sqlite+pysqlite:///:memory:")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    calls = 0
+    original_record = capabilities._record
+
+    def counted_record(owner_id):
+        nonlocal calls
+        calls += 1
+        return original_record(owner_id)
+
+    def unexpected_is_enabled(owner_id, capability_id):
+        raise AssertionError("snapshot must not query durable state once per capability")
+
+    monkeypatch.setattr(capabilities, "_record", counted_record)
+    monkeypatch.setattr(capabilities, "is_enabled", unexpected_is_enabled)
+
+    snapshot = capabilities.snapshot("snapshot-owner")
+
+    assert calls == 1
+    assert snapshot["panel_auto_factory"] is False
+    assert snapshot["panel_auto_factory_range"] is False
+    db.engine.dispose()
