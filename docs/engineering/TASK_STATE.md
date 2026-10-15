@@ -190,3 +190,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 ### Validation update — 2026-10-15
 - PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compile and full pytest).
 - The code change is CI-validated; live Telegram responsiveness and restart/session reuse remain open external checks. Do not report the delay as definitively fixed until those checks are observed.
+
+
+## 2026-10-15 — Follow-up task: improve Telegram command responsiveness
+- Reduced panel home/category/status rendering to one capability snapshot per page render.
+- Offloaded selected blocking database operations used by Telegram handlers and linked-session startup/auth flows to worker threads, preserving async transport responsiveness during database waits.
+- Added elapsed-time logs for onboarding slash commands without logging message bodies.
+- Pending validation: CI for the updated PR branch and real runtime latency checks for `/start`, `/status`, `/panel`, and `/پنل`; do not claim measured speedup until runtime logs are available.
