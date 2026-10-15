@@ -328,7 +328,7 @@ def test_panel_callback_data_is_compact_for_long_capability_ids():
     all_buttons = [button for row in category_buttons + child_buttons for button in row]
 
     assert "خودکار" in category_text
-    assert "کارخانه" in child_text
+    assert "کارخونه" in child_text
     assert all(len(button.data) <= 64 for button in all_buttons)
     assert any(
         OnboardingBot._decode_panel_target(button.data.decode().split("|")[-1]) == "panel_auto_factory_range"
