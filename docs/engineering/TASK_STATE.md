@@ -178,3 +178,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Completed: repository state inspection; PostgreSQL/Alembic compatibility review; dedicated branch `feat/supabase-postgres-runtime`; PR #49 created; runtime workflow switched to PostgreSQL; bounded PostgreSQL connection timeout added; PostgreSQL config regression test added.
 - Pending: CI green validation; configure GitHub `DATABASE_URL` with the Supabase Session Pooler URI; run Alembic against Supabase; run durable persistence/session smoke test; run Telegram runtime; verify `/status`, `/panel`, `/پنل`, and restart/session reuse; then update deployment/state docs and only after successful evidence retire SQL Server/Tailscale runtime dependency.
 - Security rule: never commit or expose the Supabase database password/complete secret URI.
+
+
+## 2026-10-15 — Active task: bound Telegram reconnect attempts
+- Investigated the previous GitHub Actions runtime job and logs. PostgreSQL diagnostics and migrations succeeded; the bot stayed running until the operator canceled the long-running job. Telethon logs contained reconnect attempts and then resumed update processing.
+- Added configurable connection timeout/retry controls and wired them to onboarding, QR auth, and linked-account Telegram clients.
+- Added config range/default/override tests and runtime policy tests.
+- Next: review branch diff, run CI, fix any regression, then use a fresh runtime to test /start, /status, /panel, /پنل, linked-account routing and restart/session reuse. Live responsiveness remains unverified.
