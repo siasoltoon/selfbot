@@ -211,3 +211,9 @@ A phase remains non-final until its required evidence is recorded.
 - Added regression tests for compact encoding/decoding of long capability IDs, legacy target compatibility, and callback payloads staying within Telegram's 64-byte limit.
 - Runtime code now explicitly guards UTF-8 callback payload size and treats `MessageNotModifiedError` as a benign no-op.
 - CI run `38723195343`: PASS on Python 3.11 and 3.12; compile and full pytest passed. Real Telegram button interaction: NOT_RUN after this fix.
+
+## 2026-10-16 — Capability snapshot performance regression
+- Added regression test that counts `_record()` calls and makes `is_enabled()` fail if called by `snapshot()`; snapshot passes with exactly one durable-record read.
+- Added safe callback lifecycle instrumentation to distinguish callbacks not reaching the bot from callbacks blocked during rendering or edits.
+- CI run `38813684030`: Python 3.11 PASS; Python 3.12 PASS; source compilation and full pytest suite passed.
+- Real Telegram callback/navigation/toggle verification after this fix: NOT RUN.
