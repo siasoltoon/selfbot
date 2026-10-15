@@ -193,3 +193,9 @@ A phase remains non-final until its required evidence is recorded.
 - Added a regression assertion that the onboarding panel home render calls `CapabilityService.snapshot` once rather than once per category.
 - Existing runtime router tests cover status/panel routing; the latest branch CI must validate the threaded database-call changes on Python 3.11 and 3.12.
 - Live Telegram response latency remains NOT_RUN until a fresh runtime run records the new command elapsed-time logs.
+
+
+### Validation result — response latency follow-up
+- CI run `38718072323`: Python 3.11 PASS, Python 3.12 PASS; compilation and full pytest completed successfully.
+- The regression test verifies the onboarding panel renders from one capability snapshot. This validates code behavior, not real Telegram latency.
+- Live `/start`, `/status`, `/panel`, `/پنل` timing and reconnect behavior remain NOT_RUN.
