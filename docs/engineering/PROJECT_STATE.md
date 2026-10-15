@@ -196,3 +196,11 @@ Do not mark the entire project release PASS until those evidence items are compl
 ### CI validation update — Telegram response latency
 - PR #50 head validation run `38718072323` passed both Python 3.11 and 3.12, including source compilation and the full pytest suite after the response-latency changes.
 - Live `/start`, `/status`, `/panel`, `/پنل` latency and reconnect recovery remain pending external runtime verification.
+
+
+## 2026-10-15 — Inline panel callback failure follow-up
+- User-provided live logs showed `QueryIdInvalidError` during inline result delivery, callback handler exceptions, and linked-account `/پنل` around 10.4 s; some `/status` and onboarding commands took about 75 s during Telegram transport reconnects.
+- Updated the initial inline panel to render a database-free landing page, avoiding remote DB work before Telegram's short inline-query answer deadline.
+- Callback handlers now acknowledge valid button presses before remote database work, log processing failures safely, and attempt to display a useful error rather than raising an unhandled callback exception.
+- Fixed navigation after a toggle: it now returns to the selected capability detail page instead of attempting to render the unsupported `toggle:<id>` page.
+- Regression tests and CI run `38720998500` passed on Python 3.11 and 3.12. Live retest is still required.
