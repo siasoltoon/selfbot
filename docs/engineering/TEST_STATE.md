@@ -210,4 +210,4 @@ A phase remains non-final until its required evidence is recorded.
 - Live runtime evidence: category callback failed with `ValueError: Too many bytes for the data`; capability callback also surfaced `MessageNotModifiedError` for unchanged inline message content.
 - Added regression tests for compact encoding/decoding of long capability IDs, legacy target compatibility, and callback payloads staying within Telegram's 64-byte limit.
 - Runtime code now explicitly guards UTF-8 callback payload size and treats `MessageNotModifiedError` as a benign no-op.
-- CI result for this change: PENDING. Real Telegram button interaction: NOT_RUN after this fix.
+- CI run `38723195343`: PASS on Python 3.11 and 3.12; compile and full pytest passed. Real Telegram button interaction: NOT_RUN after this fix.
