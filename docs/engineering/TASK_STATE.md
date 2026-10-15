@@ -209,3 +209,11 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Implemented a database-free inline panel landing page, immediate callback acknowledgement, safe callback error logging/display, and correct post-toggle page routing.
 - Added regression tests for toggle navigation and fast panel construction without a capability database read.
 - CI run `38720998500` passed on Python 3.11 and 3.12. Pending: fresh live verification of panel category navigation, capability details, toggles, `/start`, `/status`, `/panel`, and `/پنل`.
+
+## 2026-10-15 — Confirmed inline panel callback byte-limit defect
+- New live logs isolated the category-navigation failure: Telethon raises `ValueError: Too many bytes for the data` while constructing callback buttons for long capability IDs. Telegram callback data is limited to 64 bytes; nested capability buttons can exceed the limit and prevent the page from being edited.
+- Added compact deterministic base-36 target aliases for panel category/capability IDs while preserving owner-token verification and compatibility with already-rendered legacy target values.
+- Added an explicit UTF-8 byte-length guard before creating inline buttons.
+- `MessageNotModifiedError` is now treated as an idempotent no-op rather than a failed panel action.
+- Regression coverage added for long capability targets, payload size, compact/legacy decoding. CI validation is pending.
+- Live Telegram verification is still required after a fresh runtime: navigate categories, open long-ID modules, toggle one capability and verify persistence. Do not mark panel interaction PASS based on CI alone.
