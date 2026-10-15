@@ -179,3 +179,8 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Prior logs show Telethon reconnect activity and a long gap during a network reconnect. This is evidence of a Telegram transport/reconnect incident, not proof of a database failure. Telethon later resumed update processing.
 - Branch fix/telegram-runtime-reconnect-resilience adds environment-configurable connection timeout/retry settings to onboarding, QR authentication, and linked-account clients.
 - CI is pending. Real Telegram latency/reconnect verification still requires a new deployed runtime; do not claim the live issue fixed solely from unit tests.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 after the transport-policy changes and engineering-state updates.
+- This does not close the live Telegram responsiveness gate. The next runtime run must verify immediate `/start`, `/status`, `/panel`, `/پنل` replies and behavior after a reconnect.
