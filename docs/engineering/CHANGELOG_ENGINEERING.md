@@ -237,3 +237,8 @@ Only environment-dependent verification remains before final release: real Teleg
 - Added compact deterministic target codes, legacy-target compatibility during runtime/message refresh, and an explicit byte-length guard.
 - Treated Telegram's unchanged-message edit exception as a benign idempotent outcome.
 - Added focused regression tests. CI run `38723195343` passed on Python 3.11 and 3.12; fresh live runtime verification remains pending.
+
+## 2026-10-16 — Eliminate capability snapshot N+1 reads
+- Optimized `CapabilityService.snapshot()` to fetch owner state once and compute parent-gated capability status in memory, avoiding a remote database lookup for every child capability.
+- Added regression coverage for single-read behavior and callback lifecycle diagnostics for received/acknowledged/rendered/completed stages.
+- CI run `38813684030` passed on Python 3.11 and 3.12. Real Telegram verification remains pending.
