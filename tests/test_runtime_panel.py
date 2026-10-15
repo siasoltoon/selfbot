@@ -278,3 +278,34 @@ def test_database_connection_retry_settings_are_safe():
             os.environ.pop("DATABASE_CONNECT_RETRY_DELAY", None)
         else:
             os.environ["DATABASE_CONNECT_RETRY_DELAY"] = original_delay
+
+def test_panel_action_maps_toggle_back_to_capability_page():
+    from selfbot.multi_user_telegram import OnboardingBot
+
+    assert OnboardingBot._panel_page_for_action("toggle", "panel_ping") == "cap:panel_ping"
+    assert OnboardingBot._panel_page_for_action("category", "security") == "category:security"
+    assert OnboardingBot._panel_page_for_action("system", None) == "system"
+    assert OnboardingBot._panel_page_for_action("home", None) == "home"
+
+
+def test_fast_panel_home_does_not_query_capability_database():
+    from selfbot.multi_user_telegram import OnboardingBot
+    from selfbot.panel import PanelService
+
+    class NoDatabaseCapabilities:
+        def definitions(self):
+            raise AssertionError("fast panel home must not read database-backed capabilities")
+
+    class FakeAuth:
+        @staticmethod
+        def _safe_exception_message(exc):
+            return str(exc)
+
+    bot = OnboardingBot.__new__(OnboardingBot)
+    bot.capabilities = NoDatabaseCapabilities()
+    bot.panel = PanelService(bot.capabilities)
+    bot.panel_token_factory = lambda owner_id: "signed-token"
+    text, buttons = bot._panel_home_fast("owner")
+
+    assert "پنل آماده است" in text
+    assert len(buttons) >= 4
