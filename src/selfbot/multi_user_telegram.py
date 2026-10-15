@@ -1056,8 +1056,18 @@ class OnboardingBot:
 
         @self._client.on(events.CallbackQuery)
         async def on_callback(event: Any) -> None:
-            data = bytes(getattr(event, "data", b"") or b"").decode("utf-8", "ignore")
-            if not data.startswith("panel|"): return
+            started_at = time.perf_counter()
+            raw_data = bytes(getattr(event, "data", b"") or b"")
+            data = raw_data.decode("utf-8", "ignore")
+            self.logger.info("telegram callback query received", extra={"context": {
+                "stage": "callback_received",
+                "data_bytes": len(raw_data),
+                "panel_payload": data.startswith("panel|"),
+                "inline_message": bool(getattr(event, "inline_message_id", None)),
+                "sender_fingerprint": self.auth._owner_fingerprint(str(getattr(event, "sender_id", "") or "")),
+            }})
+            if not data.startswith("panel|"):
+                return
             parts = data.split("|", 3)
             if len(parts) < 3:
                 await event.answer("درخواست نامعتبر است.", alert=True); return
@@ -1080,11 +1090,18 @@ class OnboardingBot:
             # expire quickly and must not wait for Supabase/database latency.
             try:
                 await event.answer("در حال پردازش…")
+                self.logger.info("telegram panel callback acknowledged", extra={"context": {
+                    "stage": "callback_acknowledged", "action": action,
+                    "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                }})
             except Exception as exc:
                 self.logger.info("telegram panel callback acknowledgement failed", extra={"context":{
-                    "stage":"callback_ack","exception_type":type(exc).__name__
+                    "stage":"callback_ack","action":action,"exception_type":type(exc).__name__
                 }})
             try:
+                self.logger.info("telegram panel callback processing started", extra={"context": {
+                    "stage": "callback_processing_started", "action": action,
+                }})
                 message = None
                 if action == "toggle":
                     if target is None: raise ValueError("missing capability")
@@ -1094,10 +1111,20 @@ class OnboardingBot:
                 elif action not in {"home", "category", "cap", "system"}:
                     raise ValueError("unknown panel action")
                 page = self._panel_page_for_action(action, target)
+                render_started = time.perf_counter()
                 text, buttons = await asyncio.to_thread(self._panel_page, owner_id, page)
+                self.logger.info("telegram panel callback page rendered", extra={"context": {
+                    "stage": "callback_page_rendered", "action": action, "page": page,
+                    "elapsed_ms": round((time.perf_counter() - render_started) * 1000),
+                    "button_count": sum(len(row) for row in buttons),
+                }})
                 if message:
                     text = f"{message}\\n\\n{text}"
                 await event.edit(text, buttons=buttons)
+                self.logger.info("telegram panel callback completed", extra={"context": {
+                    "stage": "callback_completed", "action": action, "page": page,
+                    "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                }})
             except Exception as exc:
                 if type(exc).__name__ == "MessageNotModifiedError":
                     self.logger.info("telegram panel callback produced no message changes", extra={"context": {
