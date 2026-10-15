@@ -171,3 +171,11 @@ Do not mark the entire project release PASS until those evidence items are compl
 - The runtime now requires `DATABASE_URL` in production instead of silently falling back to ephemeral SQLite.
 - No SQL Server credentials, Telegram session, encryption key, or current PC/Tailscale setup has been removed yet.
 - Live Supabase migration, persistence, Telegram runtime, `/status`, `/panel`, and restart/session-reuse evidence are still NOT PASS until executed with the new Supabase secret.
+
+
+## 2026-10-15 — Telegram reconnect resilience investigation
+- Recovered GitHub Connector access and inspected current main, the runtime workflow, multi-user Telegram client construction, tests, and the canceled runtime job logs.
+- Latest main at investigation start was 73b2e7dc4696862ed26ee2bfd5678404b7f5424e; PostgreSQL diagnostics and migrations succeeded in runtime run 37466169802. The run was manually canceled during the long-running bot step, so cancellation is not a startup failure.
+- Prior logs show Telethon reconnect activity and a long gap during a network reconnect. This is evidence of a Telegram transport/reconnect incident, not proof of a database failure. Telethon later resumed update processing.
+- Branch fix/telegram-runtime-reconnect-resilience adds environment-configurable connection timeout/retry settings to onboarding, QR authentication, and linked-account clients.
+- CI is pending. Real Telegram latency/reconnect verification still requires a new deployed runtime; do not claim the live issue fixed solely from unit tests.
