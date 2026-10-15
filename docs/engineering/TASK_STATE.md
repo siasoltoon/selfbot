@@ -202,3 +202,10 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 ### Validation result — response latency follow-up
 - GitHub Actions run `38718072323` passed on Python 3.11 and 3.12 (compile and full pytest).
 - Live Telegram latency remains unmeasured; next step is a fresh runtime run and comparison of the new `telegram onboarding command handled` elapsed-time logs.
+
+
+## 2026-10-15 — Panel buttons unresponsive: follow-up
+- Root evidence: live logs contained `QueryIdInvalidError` from late inline-query answers and `Unhandled exception on on_callback`; observed command durations included ~10 s and ~75 s.
+- Implemented a database-free inline panel landing page, immediate callback acknowledgement, safe callback error logging/display, and correct post-toggle page routing.
+- Added regression tests for toggle navigation and fast panel construction without a capability database read.
+- CI run `38720998500` passed on Python 3.11 and 3.12. Pending: fresh live verification of panel category navigation, capability details, toggles, `/start`, `/status`, `/panel`, and `/پنل`.
