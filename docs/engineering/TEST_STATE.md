@@ -199,3 +199,9 @@ A phase remains non-final until its required evidence is recorded.
 - CI run `38718072323`: Python 3.11 PASS, Python 3.12 PASS; compilation and full pytest completed successfully.
 - The regression test verifies the onboarding panel renders from one capability snapshot. This validates code behavior, not real Telegram latency.
 - Live `/start`, `/status`, `/panel`, `/پنل` timing and reconnect behavior remain NOT_RUN.
+
+
+## 2026-10-15 — Inline panel callback follow-up
+- Added tests that toggle actions map to `cap:<capability_id>` and the initial inline landing page renders without querying capability state.
+- CI run `38720998500` passed on Python 3.11 and 3.12; compilation and full pytest suite passed.
+- Live Telegram retest remains NOT_RUN after this fix. Earlier user-provided logs show callback handler errors and inline query expiration.
