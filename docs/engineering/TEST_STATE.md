@@ -205,3 +205,9 @@ A phase remains non-final until its required evidence is recorded.
 - Added tests that toggle actions map to `cap:<capability_id>` and the initial inline landing page renders without querying capability state.
 - CI run `38720998500` passed on Python 3.11 and 3.12; compilation and full pytest suite passed.
 - Live Telegram retest remains NOT_RUN after this fix. Earlier user-provided logs show callback handler errors and inline query expiration.
+
+## 2026-10-15 — Panel callback payload failure regression
+- Live runtime evidence: category callback failed with `ValueError: Too many bytes for the data`; capability callback also surfaced `MessageNotModifiedError` for unchanged inline message content.
+- Added regression tests for compact encoding/decoding of long capability IDs, legacy target compatibility, and callback payloads staying within Telegram's 64-byte limit.
+- Runtime code now explicitly guards UTF-8 callback payload size and treats `MessageNotModifiedError` as a benign no-op.
+- CI result for this change: PENDING. Real Telegram button interaction: NOT_RUN after this fix.
