@@ -133,10 +133,20 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
     bot.panel = PanelService(capabilities)
     bot.panel_token_factory = lambda owner_id: "signed-token"
     bot.logger = type("Logger", (), {"warning": staticmethod(lambda *args, **kwargs: None)})()
+    snapshot_calls = 0
+    original_snapshot = capabilities.snapshot
+
+    def counted_snapshot(owner_id):
+        nonlocal snapshot_calls
+        snapshot_calls += 1
+        return original_snapshot(owner_id)
+
+    capabilities.snapshot = counted_snapshot
 
     event = Event()
     asyncio.run(bot._handle("owner", event, "/پنل"))
 
+    assert snapshot_calls == 1
     assert len(event.replies) == 1
     text, kwargs = event.replies[0]
     assert "Selfbot Control Center" in text
