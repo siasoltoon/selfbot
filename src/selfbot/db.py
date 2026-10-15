@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.engine import Connection, Engine, make_url
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -80,8 +81,14 @@ class Database:
             raise ValueError("connect_retry_delay must be non-negative")
 
         connect_args: dict[str, Any] = {}
-        if url.startswith("sqlite"):
+        poolclass = None
+        parsed_url = make_url(url)
+        if parsed_url.drivername.startswith("sqlite"):
             connect_args["check_same_thread"] = False
+            # In-memory SQLite databases must share one connection when async
+            # Telegram handlers offload synchronous database work to threads.
+            if parsed_url.database in (None, "", ":memory:"):
+                poolclass = StaticPool
         elif url.startswith("mssql+pyodbc"):
             connect_args["timeout"] = 10
         elif url.startswith(("postgresql://", "postgresql+")):
@@ -92,6 +99,8 @@ class Database:
             "pool_pre_ping": True,
             "connect_args": connect_args,
         }
+        if poolclass is not None:
+            engine_kwargs["poolclass"] = poolclass
         if not url.startswith("sqlite"):
             engine_kwargs["pool_recycle"] = 300
             engine_kwargs["pool_timeout"] = 30
