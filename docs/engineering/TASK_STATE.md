@@ -197,3 +197,8 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Offloaded selected blocking database operations used by Telegram handlers and linked-session startup/auth flows to worker threads, preserving async transport responsiveness during database waits.
 - Added elapsed-time logs for onboarding slash commands without logging message bodies.
 - Pending validation: CI for the updated PR branch and real runtime latency checks for `/start`, `/status`, `/panel`, and `/پنل`; do not claim measured speedup until runtime logs are available.
+
+
+### Validation result — response latency follow-up
+- GitHub Actions run `38718072323` passed on Python 3.11 and 3.12 (compile and full pytest).
+- Live Telegram latency remains unmeasured; next step is a fresh runtime run and comparison of the new `telegram onboarding command handled` elapsed-time logs.
