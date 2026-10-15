@@ -221,3 +221,8 @@ Only environment-dependent verification remains before final release: real Teleg
 - Moved blocking store/capability reads and writes off async Telegram handlers' event loop at selected latency-sensitive boundaries.
 - Added privacy-safe elapsed-time logging for onboarding slash commands.
 - Validation pending for this follow-up; no live latency improvement is claimed before CI and runtime measurement.
+
+
+### Validation — Telegram responsiveness follow-up
+- CI run `38718072323` passed on Python 3.11 and 3.12 after the panel snapshot, thread-offload, SQLite test-pool, and command timing changes.
+- Live runtime latency measurement is still required before claiming a measured speedup.
