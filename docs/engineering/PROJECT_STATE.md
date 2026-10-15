@@ -204,3 +204,8 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Callback handlers now acknowledge valid button presses before remote database work, log processing failures safely, and attempt to display a useful error rather than raising an unhandled callback exception.
 - Fixed navigation after a toggle: it now returns to the selected capability detail page instead of attempting to render the unsupported `toggle:<id>` page.
 - Regression tests and CI run `38720998500` passed on Python 3.11 and 3.12. Live retest is still required.
+
+## 2026-10-15 — Current panel-button blocker
+- Latest live logs identify the concrete button failure: long capability IDs make Telethon reject inline callback data above Telegram's 64-byte limit. The `/start`, `/status`, and panel entry commands are responsive in the latest run, but nested button navigation remains broken until the callback payload fix is deployed.
+- Branch `fix/telegram-runtime-reconnect-resilience` now uses compact deterministic target aliases, validates callback-data byte length, preserves authenticated owner tokens and legacy target decoding, and suppresses benign `MessageNotModifiedError` noise.
+- Required next gate: branch CI, then a fresh runtime run to verify category navigation, long capability detail pages, toggle + persistence, and callback error-free logs. Network reconnect delays seen earlier remain a separate live-runtime concern.
