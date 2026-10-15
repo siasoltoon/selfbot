@@ -147,3 +147,10 @@
 - Application contract remains `DATABASE_URL`; deployment-specific connectivity stays in environment/configuration rather than core business logic.
 - The migration is staged: keep SQL Server/Tailscale intact until live PostgreSQL migration, persistence and Telegram runtime evidence passes.
 - No database password is stored in source control or engineering state.
+
+
+## 2026-10-15 — Bound Telethon transport retries through configuration
+- Decision: configure Telethon connection timeout, connection retries, retry delay and request retries through validated environment settings, and inject the same policy into onboarding, QR-auth and linked-account clients.
+- Rationale: avoid implicit library defaults and make recovery behavior tunable per deployment without coupling core behavior to GitHub Actions.
+- Defaults: 10-second connection timeout, 3 connection retries, 1-second retry delay, 3 request retries. Automatic reconnection remains enabled.
+- Limitation: this reduces retry wait bounds but cannot make commands responsive while network/Telegram transport is unavailable. Live runtime validation is required.
