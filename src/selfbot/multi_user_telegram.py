@@ -757,6 +757,7 @@ class MultiUserTelegramRuntime:
         self.store = store
         self.events = events
         self.client_factory = client_factory
+        self.logger = get_logger(__name__)
         self._client_options = {
             "timeout": connection_timeout,
             "connection_retries": connection_retries,
@@ -822,25 +823,39 @@ class MultiUserTelegramRuntime:
 
     def _handler(self, owner_user_id: str, account_id: str) -> Callable[[Any], Awaitable[None]]:
         async def handler(event: Any) -> None:
+            started_at = time.perf_counter()
             message = getattr(event, "message", event)
+            text_value = getattr(message, "message", None)
             occurred_at = getattr(message, "date", None) or datetime.now(timezone.utc)
             if occurred_at.tzinfo is None:
                 occurred_at = occurred_at.replace(tzinfo=timezone.utc)
-            await self.events.dispatch(EventEnvelope(
-                event_type="telegram.new_message",
-                source=f"telegram.account.{account_id}",
-                actor_id=owner_user_id,
-                chat_id=str(getattr(message, "chat_id", "") or ""),
-                occurred_at=occurred_at,
-                payload={
-                    "message_id": str(getattr(message, "id", "") or ""),
-                    "text": getattr(message, "message", None),
-                    "telegram_account_id": account_id,
-                    "chat_input_entity": getattr(event, "input_chat", None),
-                    "outgoing": bool(getattr(message, "out", False)),
-                    "reply_to_user_id": await self._reply_user_id(message),
-                },
-            ))
+            try:
+                await self.events.dispatch(EventEnvelope(
+                    event_type="telegram.new_message",
+                    source=f"telegram.account.{account_id}",
+                    actor_id=owner_user_id,
+                    chat_id=str(getattr(message, "chat_id", "") or ""),
+                    occurred_at=occurred_at,
+                    payload={
+                        "message_id": str(getattr(message, "id", "") or ""),
+                        "text": text_value,
+                        "telegram_account_id": account_id,
+                        "chat_input_entity": getattr(event, "input_chat", None),
+                        "outgoing": bool(getattr(message, "out", False)),
+                        "reply_to_user_id": await self._reply_user_id(message),
+                    },
+                ))
+            finally:
+                command_text = text_value.strip() if isinstance(text_value, str) else ""
+                if command_text.startswith(("/", ".")):
+                    self.logger.info(
+                        "telegram linked-account command handled",
+                        extra={"context": {
+                            "command": command_text.split(maxsplit=1)[0].lower()[:32],
+                            "account_id": account_id,
+                            "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                        }},
+                    )
         return handler
 
     async def open_panel(
