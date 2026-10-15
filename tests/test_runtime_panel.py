@@ -310,9 +310,18 @@ def test_fast_panel_home_does_not_query_capability_database():
     assert "پنل آماده است" in text
     assert len(buttons) >= 4
 
-def test_panel_callback_data_is_compact_for_long_capability_ids():
+def test_panel_callback_data_is_compact_for_long_capability_ids(monkeypatch):
+    from types import SimpleNamespace
+    import telethon
     from selfbot.multi_user_telegram import OnboardingBot
     from selfbot.panel import PanelService
+
+    class FakeButton:
+        @staticmethod
+        def inline(text, data):
+            return SimpleNamespace(text=text, data=data.encode("utf-8"))
+
+    monkeypatch.setattr(telethon, "Button", FakeButton)
 
     db = Database("sqlite+pysqlite:///:memory:")
     db.create_schema_for_tests()
