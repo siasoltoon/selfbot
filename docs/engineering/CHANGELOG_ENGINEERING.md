@@ -204,3 +204,41 @@ Only environment-dependent verification remains before final release: real Teleg
 - Created PR #49: runtime production database path now targets PostgreSQL, installs the existing psycopg optional dependency, validates the database target without printing credentials, and refuses an absent production `DATABASE_URL`.
 - Added bounded PostgreSQL connection acquisition timeout and configuration regression coverage.
 - Live Supabase evidence remains pending.
+
+
+## 2026-10-15 — Telegram reconnect resilience
+- Investigated the previous long-running GitHub Actions runtime log; PostgreSQL diagnostics and migrations succeeded, and Telethon later resumed update processing after reconnect activity.
+- Added validated environment settings for Telethon connection timeout, connection retries, retry delay, and request retries; wired them to onboarding, QR login and persisted account clients.
+- Added config validation and reconnect-policy regression tests. CI/live runtime verification pending.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compileall and full pytest). Live Telegram reconnect/latency remains an external verification gate.
+
+
+## 2026-10-15 — Telegram responsiveness follow-up
+- Reused one capability snapshot for panel counts to avoid repeated remote database reads.
+- Moved blocking store/capability reads and writes off async Telegram handlers' event loop at selected latency-sensitive boundaries.
+- Added privacy-safe elapsed-time logging for onboarding slash commands.
+- Validation pending for this follow-up; no live latency improvement is claimed before CI and runtime measurement.
+
+
+### Validation — Telegram responsiveness follow-up
+- CI run `38718072323` passed on Python 3.11 and 3.12 after the panel snapshot, thread-offload, SQLite test-pool, and command timing changes.
+- Live runtime latency measurement is still required before claiming a measured speedup.
+
+
+## 2026-10-15 — Fix unresponsive panel buttons
+- Rendered the initial inline panel without waiting for remote database reads, acknowledged callbacks before database work, corrected toggle navigation, and added safe callback failure reporting.
+- Added regression tests for page routing and database-free initial panel rendering. CI run `38720998500` passed on Python 3.11 and 3.12; live runtime verification remains pending.
+
+## 2026-10-15 — Compact inline panel callback data
+- Fixed confirmed Telegram inline-button failure caused by callback payloads exceeding the 64-byte limit when full capability IDs were embedded alongside the signed owner token.
+- Added compact deterministic target codes, legacy-target compatibility during runtime/message refresh, and an explicit byte-length guard.
+- Treated Telegram's unchanged-message edit exception as a benign idempotent outcome.
+- Added focused regression tests. CI run `38723195343` passed on Python 3.11 and 3.12; fresh live runtime verification remains pending.
+
+## 2026-10-16 — Eliminate capability snapshot N+1 reads
+- Optimized `CapabilityService.snapshot()` to fetch owner state once and compute parent-gated capability status in memory, avoiding a remote database lookup for every child capability.
+- Added regression coverage for single-read behavior and callback lifecycle diagnostics for received/acknowledged/rendered/completed stages.
+- CI run `38813684030` passed on Python 3.11 and 3.12. Real Telegram verification remains pending.

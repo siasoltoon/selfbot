@@ -171,3 +171,47 @@ Do not mark the entire project release PASS until those evidence items are compl
 - The runtime now requires `DATABASE_URL` in production instead of silently falling back to ephemeral SQLite.
 - No SQL Server credentials, Telegram session, encryption key, or current PC/Tailscale setup has been removed yet.
 - Live Supabase migration, persistence, Telegram runtime, `/status`, `/panel`, and restart/session-reuse evidence are still NOT PASS until executed with the new Supabase secret.
+
+
+## 2026-10-15 — Telegram reconnect resilience investigation
+- Recovered GitHub Connector access and inspected current main, the runtime workflow, multi-user Telegram client construction, tests, and the canceled runtime job logs.
+- Latest main at investigation start was 73b2e7dc4696862ed26ee2bfd5678404b7f5424e; PostgreSQL diagnostics and migrations succeeded in runtime run 37466169802. The run was manually canceled during the long-running bot step, so cancellation is not a startup failure.
+- Prior logs show Telethon reconnect activity and a long gap during a network reconnect. This is evidence of a Telegram transport/reconnect incident, not proof of a database failure. Telethon later resumed update processing.
+- Branch fix/telegram-runtime-reconnect-resilience adds environment-configurable connection timeout/retry settings to onboarding, QR authentication, and linked-account clients.
+- CI is pending. Real Telegram latency/reconnect verification still requires a new deployed runtime; do not claim the live issue fixed solely from unit tests.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 after the transport-policy changes and engineering-state updates.
+- This does not close the live Telegram responsiveness gate. The next runtime run must verify immediate `/start`, `/status`, `/panel`, `/پنل` replies and behavior after a reconnect.
+
+
+## 2026-10-15 — Telegram response-latency hardening
+- Follow-up to PR #50 reduces remote-database round trips in the Telegram panel: one capability snapshot now feeds the home/category/status panel counts instead of repeated snapshots per category.
+- Database-backed panel rendering, account-status reads, capability gates, QR account-list reads, linked-session startup reads, session persistence, and revoke operations are moved to `asyncio.to_thread` at async Telegram boundaries to avoid blocking the shared event loop during database waits.
+- Added structured elapsed-time logging for onboarding slash commands (command name, elapsed milliseconds, hashed user fingerprint; message contents are not logged).
+- This is a targeted responsiveness improvement, not a claim that Telegram network outages are solved. Live latency needs a fresh runtime measurement.
+
+
+### CI validation update — Telegram response latency
+- PR #50 head validation run `38718072323` passed both Python 3.11 and 3.12, including source compilation and the full pytest suite after the response-latency changes.
+- Live `/start`, `/status`, `/panel`, `/پنل` latency and reconnect recovery remain pending external runtime verification.
+
+
+## 2026-10-15 — Inline panel callback failure follow-up
+- User-provided live logs showed `QueryIdInvalidError` during inline result delivery, callback handler exceptions, and linked-account `/پنل` around 10.4 s; some `/status` and onboarding commands took about 75 s during Telegram transport reconnects.
+- Updated the initial inline panel to render a database-free landing page, avoiding remote DB work before Telegram's short inline-query answer deadline.
+- Callback handlers now acknowledge valid button presses before remote database work, log processing failures safely, and attempt to display a useful error rather than raising an unhandled callback exception.
+- Fixed navigation after a toggle: it now returns to the selected capability detail page instead of attempting to render the unsupported `toggle:<id>` page.
+- Regression tests and CI run `38720998500` passed on Python 3.11 and 3.12. Live retest is still required.
+
+## 2026-10-15 — Current panel-button blocker
+- Latest live logs identify the concrete button failure: long capability IDs make Telethon reject inline callback data above Telegram's 64-byte limit. The `/start`, `/status`, and panel entry commands are responsive in the latest run, but nested button navigation remains broken until the callback payload fix is deployed.
+- Branch `fix/telegram-runtime-reconnect-resilience` now uses compact deterministic target aliases, validates callback-data byte length, preserves authenticated owner tokens and legacy target decoding, and suppresses benign `MessageNotModifiedError` noise.
+- Required next gate: branch CI, then a fresh runtime run to verify category navigation, long capability detail pages, toggle + persistence, and callback error-free logs. Network reconnect delays seen earlier remain a separate live-runtime concern.
+
+## 2026-10-16 — Panel latency root cause and callback tracing
+- Latest runtime showed `/status` and `/panel` taking 80+ seconds while buttons produced no visible navigation. The code-level cause found in the current branch was `CapabilityService.snapshot()` calling `is_enabled()` once per child capability; each call reloaded the owner state from the remote domain store. Panel rendering therefore caused dozens of network round trips.
+- `snapshot()` now reads owner state once and resolves all capability values in memory. Added regression coverage proving one durable read and no per-capability `is_enabled()` calls.
+- Added safe lifecycle logs for callback receipt, acknowledgment, page-render duration, and successful edit, without logging callback tokens or raw payloads.
+- CI run `38813684030` passed on Python 3.11 and 3.12. Fresh live Telegram verification remains required; do not claim buttons fixed until a new runtime confirms category navigation and toggle persistence.

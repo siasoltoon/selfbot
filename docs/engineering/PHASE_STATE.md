@@ -131,3 +131,9 @@ STATUS: AUDIT FRAMEWORK IMPLEMENTED; FINAL EVIDENCE BLOCKED UNTIL OPERATOR/ENVIR
 - PR #49 moves the production GitHub Actions runtime to PostgreSQL and removes the runtime dependency on Tailscale/SQL Server.
 - CI/code-side validation is required before merge; live Supabase migration and persistence remain external evidence gates.
 - SQL Server/Tailscale must remain available as rollback infrastructure until Supabase runtime verification is complete.
+
+
+## 2026-10-15 — Telegram reconnect resilience
+- Added a shared configuration policy passed to onboarding bot, transient QR authentication, and persisted linked-account clients.
+- Defaults: 10-second connection timeout, 3 connection retries, 1-second retry delay, and 3 request retries; environment variables tune them within validated bounds.
+- CI and live runtime verification are pending; do not mark external Telegram responsiveness PASS until verified.

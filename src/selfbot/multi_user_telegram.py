@@ -26,7 +26,8 @@ from .events import EventEnvelope, EventRouter
 from .logging import get_logger
 from .multi_user_models import TelegramAccount
 from .multi_user_security import SessionCipher
-from .panel import PanelService
+from .capabilities import PANEL_CAPABILITIES
+from .panel import PANEL_CATEGORIES, PanelService
 
 
 class AuthClient(Protocol):
@@ -150,6 +151,10 @@ class TelegramAuthenticationService:
         *,
         client_factory: Callable[[str, int, str], AuthClient] | None = None,
         ttl_seconds: int = 600,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         if not api_id or not api_hash:
             raise ConfigurationError("Telegram API credentials are required")
@@ -158,6 +163,13 @@ class TelegramAuthenticationService:
         self.store = store
         self.client_factory = client_factory
         self.ttl_seconds = ttl_seconds
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self._pending: dict[str, PendingLogin] = {}
         self._pending_qr: dict[str, PendingQRLogin] = {}
         self._lock = asyncio.Lock()
@@ -190,7 +202,7 @@ class TelegramAuthenticationService:
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
         from telethon.sessions import StringSession
-        return TelegramClient(StringSession(), self.api_id, self.api_hash)
+        return TelegramClient(StringSession(), self.api_id, self.api_hash, **self._client_options)
 
     @staticmethod
     def _normalize_phone(phone: str) -> str:
@@ -284,7 +296,8 @@ class TelegramAuthenticationService:
             try:
                 await client.connect()
                 ignored_ids: list[int] = []
-                for record in self.store.list_connected():
+                connected_records = await asyncio.to_thread(self.store.list_connected)
+                for record in connected_records:
                     try:
                         ignored_ids.append(int(record.telegram_account_id))
                     except ValueError:
@@ -680,7 +693,7 @@ class TelegramAuthenticationService:
         if not isinstance(session, str) or not session.strip():
             raise DependencyError("Telegram login succeeded but a persistent StringSession was unavailable", retryable=False)
         try:
-            self.store.save(owner_user_id, account_id, session)
+            await asyncio.to_thread(self.store.save, owner_user_id, account_id, session)
         except Exception as exc:
             raise DependencyError(
                 "Telegram login succeeded but durable session storage failed",
@@ -737,10 +750,22 @@ class MultiUserTelegramRuntime:
         events: EventRouter,
         *,
         client_factory: Callable[[str, int, str], Any] | None = None,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         self.store = store
         self.events = events
         self.client_factory = client_factory
+        self.logger = get_logger(__name__)
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self._clients: dict[str, Any] = {}
         self._panel_bot_username: str | None = None
         self._panel_token_factory: Callable[[str], str] | None = None
@@ -756,13 +781,14 @@ class MultiUserTelegramRuntime:
         # Telethon treats a plain string as a SQLite session filename.
         # Persisted sessions are encrypted StringSession payloads, so they
         # must be wrapped explicitly to restore the authenticated account.
-        return TelegramClient(StringSession(session), api_id, api_hash)
+        return TelegramClient(StringSession(session), api_id, api_hash, **self._client_options)
 
     async def start(self, api_id: str, api_hash: str) -> None:
         if not api_id or not api_hash:
             raise ConfigurationError("Telegram API credentials are required")
-        for record in self.store.list_connected():
-            session = self.store.decrypt(record)
+        records = await asyncio.to_thread(self.store.list_connected)
+        for record in records:
+            session = await asyncio.to_thread(self.store.decrypt, record)
             client = self._new_client(session, int(api_id), api_hash)
             try:
                 result = client.connect()
@@ -798,25 +824,39 @@ class MultiUserTelegramRuntime:
 
     def _handler(self, owner_user_id: str, account_id: str) -> Callable[[Any], Awaitable[None]]:
         async def handler(event: Any) -> None:
+            started_at = time.perf_counter()
             message = getattr(event, "message", event)
+            text_value = getattr(message, "message", None)
             occurred_at = getattr(message, "date", None) or datetime.now(timezone.utc)
             if occurred_at.tzinfo is None:
                 occurred_at = occurred_at.replace(tzinfo=timezone.utc)
-            await self.events.dispatch(EventEnvelope(
-                event_type="telegram.new_message",
-                source=f"telegram.account.{account_id}",
-                actor_id=owner_user_id,
-                chat_id=str(getattr(message, "chat_id", "") or ""),
-                occurred_at=occurred_at,
-                payload={
-                    "message_id": str(getattr(message, "id", "") or ""),
-                    "text": getattr(message, "message", None),
-                    "telegram_account_id": account_id,
-                    "chat_input_entity": getattr(event, "input_chat", None),
-                    "outgoing": bool(getattr(message, "out", False)),
-                    "reply_to_user_id": await self._reply_user_id(message),
-                },
-            ))
+            try:
+                await self.events.dispatch(EventEnvelope(
+                    event_type="telegram.new_message",
+                    source=f"telegram.account.{account_id}",
+                    actor_id=owner_user_id,
+                    chat_id=str(getattr(message, "chat_id", "") or ""),
+                    occurred_at=occurred_at,
+                    payload={
+                        "message_id": str(getattr(message, "id", "") or ""),
+                        "text": text_value,
+                        "telegram_account_id": account_id,
+                        "chat_input_entity": getattr(event, "input_chat", None),
+                        "outgoing": bool(getattr(message, "out", False)),
+                        "reply_to_user_id": await self._reply_user_id(message),
+                    },
+                ))
+            finally:
+                command_text = text_value.strip() if isinstance(text_value, str) else ""
+                if command_text.startswith(("/", ".")):
+                    self.logger.info(
+                        "telegram linked-account command handled",
+                        extra={"context": {
+                            "command": command_text.split(maxsplit=1)[0].lower()[:32],
+                            "account_id": account_id,
+                            "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                        }},
+                    )
         return handler
 
     async def open_panel(
@@ -929,6 +969,10 @@ class OnboardingBot:
         store: TelegramSessionStore,
         capabilities: Any | None = None,
         panel_token_factory: Callable[[str], str] | None = None,
+        connection_timeout: float = 10.0,
+        connection_retries: int = 3,
+        retry_delay: float = 1.0,
+        request_retries: int = 3,
     ) -> None:
         if not token.strip():
             raise ConfigurationError("TELEGRAM_ONBOARDING_BOT_TOKEN is required")
@@ -939,6 +983,13 @@ class OnboardingBot:
         self.store = store
         self.capabilities = capabilities
         self.panel_token_factory = panel_token_factory
+        self._client_options = {
+            "timeout": connection_timeout,
+            "connection_retries": connection_retries,
+            "retry_delay": retry_delay,
+            "request_retries": request_retries,
+            "auto_reconnect": True,
+        }
         self.panel = PanelService(capabilities) if capabilities is not None else None
         self._client: Any = None
         self.username: str | None = None
@@ -955,7 +1006,7 @@ class OnboardingBot:
             from telethon import TelegramClient, events
         except ImportError as exc:
             raise DependencyError("Telethon is not installed", retryable=False) from exc
-        self._client = TelegramClient(None, self.api_id, self.api_hash)
+        self._client = TelegramClient(None, self.api_id, self.api_hash, **self._client_options)
         await self._client.start(bot_token=self.token)
         me = await self._client.get_me()
         self.username = getattr(me, "username", None)
@@ -967,7 +1018,19 @@ class OnboardingBot:
             if not user_id:
                 return
             text = (getattr(event, "raw_text", "") or "").strip()
-            await self._handle(user_id, event, text)
+            started_at = time.perf_counter()
+            try:
+                await self._handle(user_id, event, text)
+            finally:
+                if text.startswith("/"):
+                    self.logger.info(
+                        "telegram onboarding command handled",
+                        extra={"context": {
+                            "command": text.split(maxsplit=1)[0].lower()[:32],
+                            "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                            "user_fingerprint": self.auth._owner_fingerprint(user_id),
+                        }},
+                    )
 
         @self._client.on(events.InlineQuery)
         async def on_inline_query(event: Any) -> None:
@@ -978,38 +1041,106 @@ class OnboardingBot:
             owner_id = self._verify_panel_token(token[6:])
             if owner_id is None: await event.answer([], cache_time=0); return
             try:
-                self.store.get_connected(owner_id)
-                text, buttons = self._panel_page(owner_id, "home")
+                # Inline query answers have a short server-side deadline. Render a
+                # database-free landing page so remote DB latency cannot invalidate
+                # the query ID before Telegram receives the result.
+                text, buttons = self._panel_home_fast(owner_id)
                 result = await event.builder.article("🤖 Selfbot Control Center", text=text, buttons=buttons)
                 await event.answer([result], cache_time=0, private=True)
             except Exception as exc:
                 self.logger.warning("telegram capability panel failed", extra={"context": {"stage": "inline_panel", "exception_type": type(exc).__name__, "error_message": self.auth._safe_exception_message(exc)}})
-                await event.answer([], cache_time=0)
+                try:
+                    await event.answer([], cache_time=0)
+                except Exception:
+                    self.logger.info("inline query expired before fallback answer", extra={"context":{"stage":"inline_panel_fallback","exception_type":type(exc).__name__}})
 
         @self._client.on(events.CallbackQuery)
         async def on_callback(event: Any) -> None:
-            data = bytes(getattr(event, "data", b"") or b"").decode("utf-8", "ignore")
-            if not data.startswith("panel|"): return
+            started_at = time.perf_counter()
+            raw_data = bytes(getattr(event, "data", b"") or b"")
+            data = raw_data.decode("utf-8", "ignore")
+            self.logger.info("telegram callback query received", extra={"context": {
+                "stage": "callback_received",
+                "data_bytes": len(raw_data),
+                "panel_payload": data.startswith("panel|"),
+                "inline_message": bool(getattr(event, "inline_message_id", None)),
+                "sender_fingerprint": self.auth._owner_fingerprint(str(getattr(event, "sender_id", "") or "")),
+            }})
+            if not data.startswith("panel|"):
+                return
             parts = data.split("|", 3)
-            if len(parts) < 3: await event.answer("درخواست نامعتبر است.", alert=True); return
+            if len(parts) < 3:
+                await event.answer("درخواست نامعتبر است.", alert=True); return
             owner_id = self._verify_panel_token(parts[1])
-            if owner_id is None: await event.answer("نشست پنل معتبر نیست.", alert=True); return
+            if owner_id is None:
+                await event.answer("نشست پنل معتبر نیست.", alert=True); return
             sender = str(getattr(event, "sender_id", "") or "")
-            if sender != owner_id: await event.answer("این پنل متعلق به شما نیست.", alert=True); return
-            action = parts[2]; target = parts[3] if len(parts) == 4 else None
+            if sender != owner_id:
+                await event.answer("این پنل متعلق به شما نیست.", alert=True); return
+            action = parts[2]
             try:
+                target = self._decode_panel_target(parts[3]) if len(parts) == 4 else None
+            except ValueError as exc:
+                await event.answer("دادهٔ دکمه معتبر نیست. پنل را دوباره باز کن.", alert=True)
+                self.logger.warning("telegram panel callback target rejected", extra={"context": {
+                    "stage": "callback_target_decode", "exception_type": type(exc).__name__
+                }})
+                return
+            # Acknowledge before any remote database access: callback query IDs
+            # expire quickly and must not wait for Supabase/database latency.
+            try:
+                await event.answer("در حال پردازش…")
+                self.logger.info("telegram panel callback acknowledged", extra={"context": {
+                    "stage": "callback_acknowledged", "action": action,
+                    "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                }})
+            except Exception as exc:
+                self.logger.info("telegram panel callback acknowledgement failed", extra={"context":{
+                    "stage":"callback_ack","action":action,"exception_type":type(exc).__name__
+                }})
+            try:
+                self.logger.info("telegram panel callback processing started", extra={"context": {
+                    "stage": "callback_processing_started", "action": action,
+                }})
                 message = None
                 if action == "toggle":
                     if target is None: raise ValueError("missing capability")
-                    current = self.capabilities.is_enabled(owner_id, target)
-                    self.capabilities.set_enabled(owner_id, target, not current)
+                    current = await asyncio.to_thread(self.capabilities.is_enabled, owner_id, target)
+                    await asyncio.to_thread(self.capabilities.set_enabled, owner_id, target, not current)
                     message = "قابلیت روشن شد." if not current else "قابلیت خاموش شد."
-                elif action not in {"home", "category", "cap", "system"}: raise ValueError("unknown panel action")
-                page = "home" if action == "home" else "system" if action == "system" else f"{action}:{target}" if target else "home"
-                text, buttons = self._panel_page(owner_id, page)
+                elif action not in {"home", "category", "cap", "system"}:
+                    raise ValueError("unknown panel action")
+                page = self._panel_page_for_action(action, target)
+                render_started = time.perf_counter()
+                text, buttons = await asyncio.to_thread(self._panel_page, owner_id, page)
+                self.logger.info("telegram panel callback page rendered", extra={"context": {
+                    "stage": "callback_page_rendered", "action": action, "page": page,
+                    "elapsed_ms": round((time.perf_counter() - render_started) * 1000),
+                    "button_count": sum(len(row) for row in buttons),
+                }})
+                if message:
+                    text = f"{message}\\n\\n{text}"
                 await event.edit(text, buttons=buttons)
-                await event.answer(message or "صفحه به‌روزرسانی شد.")
-            except Exception as exc: await event.answer(f"عملیات انجام نشد: {type(exc).__name__}", alert=True)
+                self.logger.info("telegram panel callback completed", extra={"context": {
+                    "stage": "callback_completed", "action": action, "page": page,
+                    "elapsed_ms": round((time.perf_counter() - started_at) * 1000),
+                }})
+            except Exception as exc:
+                if type(exc).__name__ == "MessageNotModifiedError":
+                    self.logger.info("telegram panel callback produced no message changes", extra={"context": {
+                        "stage": "callback_edit_unchanged", "action": action
+                    }})
+                    return
+                self.logger.warning("telegram panel callback failed", extra={"context":{
+                    "stage":"callback_processing","action":action,"exception_type":type(exc).__name__,
+                    "error_message":self.auth._safe_exception_message(exc)
+                }})
+                try:
+                    await event.edit(f"عملیات انجام نشد ({type(exc).__name__}). دوباره تلاش کن.")
+                except Exception as edit_exc:
+                    self.logger.warning("telegram panel callback error display failed", extra={"context":{
+                        "stage":"callback_error_display","exception_type":type(edit_exc).__name__
+                    }})
 
         self._started = True
         self.logger.info("Telegram onboarding bot started")
@@ -1023,23 +1154,105 @@ class OnboardingBot:
         self.panel_token_factory = token_factory; self._panel_token_verifier = token_verifier
 
     @staticmethod
-    def _panel_button(text: str, token: str, action: str, target: str | None = None) -> Any:
+    def _panel_target_values() -> tuple[str, ...]:
+        """Stable vocabulary for encoding panel targets into short callback data."""
+        return (
+            "status",
+            *(category.category_id for category in PANEL_CATEGORIES),
+            *(item.capability_id for item in PANEL_CAPABILITIES),
+        )
+
+    @classmethod
+    def _encode_panel_target(cls, target: str) -> str:
+        values = cls._panel_target_values()
+        try:
+            index = values.index(target)
+        except ValueError as exc:
+            raise ValueError("unknown panel target") from exc
+        alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+        if index == 0:
+            return "0"
+        encoded = ""
+        while index:
+            index, remainder = divmod(index, 36)
+            encoded = alphabet[remainder] + encoded
+        return encoded
+
+    @classmethod
+    def _decode_panel_target(cls, encoded: str) -> str:
+        values = cls._panel_target_values()
+        # Accept targets from already-rendered messages during rolling restarts.
+        if encoded in values:
+            return encoded
+        try:
+            index = int(encoded, 36)
+        except ValueError as exc:
+            raise ValueError("invalid panel target code") from exc
+        if index < 0 or index >= len(values):
+            raise ValueError("unknown panel target code")
+        return values[index]
+
+    @classmethod
+    def _panel_button(cls, text: str, token: str, action: str, target: str | None = None) -> Any:
         from telethon import Button
-        data = f"panel|{token}|{action}" + (f"|{target}" if target else "")
+        compact_target = cls._encode_panel_target(target) if target else None
+        data = f"panel|{token}|{action}" + (f"|{compact_target}" if compact_target else "")
+        if len(data.encode("utf-8")) > 64:
+            raise ValueError("panel callback data exceeds Telegram's 64-byte limit")
         return Button.inline(text, data)
+
+    @staticmethod
+    def _panel_page_for_action(action: str, target: str | None) -> str:
+        """Map an inline-button action to the page shown after it completes."""
+        if action == "home":
+            return "home"
+        if action == "system":
+            return "system"
+        if action == "toggle":
+            if not target:
+                raise ValueError("missing capability")
+            return f"cap:{target}"
+        if action in {"category", "cap"}:
+            return f"{action}:{target}" if target else "home"
+        raise ValueError("unknown panel action")
+
+    def _panel_home_fast(self, owner_id: str) -> tuple[str, list[list[Any]]]:
+        """Build the initial inline panel without a remote database round trip."""
+        if self.panel is None or self.panel_token_factory is None:
+            raise DependencyError("panel service is not configured", retryable=False)
+        token = self.panel_token_factory(owner_id)
+        buttons: list[list[Any]] = []
+        row: list[Any] = []
+        for category in self.panel.categories():
+            button = self._panel_button(category.title, token,
+                "system" if category.category_id == "system" else "category",
+                None if category.category_id == "system" else category.category_id)
+            row.append(button)
+            if len(row) == 2:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+        buttons.append([self._panel_button("📊 وضعیت کلی", token, "cap", "status")])
+        return "🤖 Selfbot Control Center\\n\\n🟢 پنل آماده است. یک بخش را انتخاب کن:", buttons
 
     def _panel_page(self, owner_id: str, page: str) -> tuple[str, list[list[Any]]]:
         if self.panel is None or self.panel_token_factory is None: raise DependencyError("panel service is not configured", retryable=False)
         token = self.panel_token_factory(owner_id); snapshot = self.capabilities.snapshot(owner_id)
         buttons: list[list[Any]] = []; row: list[Any] = []
+        def category_counts(category_id: str) -> tuple[int, int]:
+            roots = self.panel.roots(category_id)
+            return sum(1 for item in roots if snapshot[item.capability_id]), len(roots)
         def add(text: str, action: str, target: str | None = None) -> None:
             nonlocal row; row.append(self._panel_button(text, token, action, target))
             if len(row) == 2: buttons.append(row); row = []
         if page == "home":
-            enabled, total = self.panel.summary(owner_id)
+            toggleable = [item for item in self.capabilities.definitions() if item.toggleable]
+            enabled = sum(1 for item in toggleable if snapshot[item.capability_id])
+            total = len(toggleable)
             lines = ["🤖 Selfbot Control Center", "", "🟢 سیستم فعال", f"قابلیت‌های قابل مدیریت: {enabled}/{total} روشن", "", "یک بخش را انتخاب کن:"]
             for category in self.panel.categories():
-                ce, ct = self.panel.category_stats(owner_id, category.category_id)
+                ce, ct = category_counts(category.category_id)
                 if category.category_id == "system":
                     add(category.title, "system")
                 else:
@@ -1068,9 +1281,11 @@ class OnboardingBot:
 
         if page.startswith("category:"):
             category_id = page.split(":", 1)[1]; category = self.panel.category(category_id)
-            enabled, total = self.panel.category_stats(owner_id, category_id)
+            roots = self.panel.roots(category_id)
+            enabled = sum(1 for item in roots if snapshot[item.capability_id])
+            total = len(roots)
             lines = [category.title, "", category.description, f"وضعیت: {enabled}/{total} قابلیت اصلی روشن", "", "ماژول را برای ورود به زیرمنو انتخاب کن:"]
-            for item in self.panel.roots(category_id):
+            for item in roots:
                 marker = "🟢" if snapshot[item.capability_id] else "⚪"; children = self.panel.children(item.capability_id)
                 suffix = f" · {len(children)} زیرقابلیت" if children else ""; add(f"{marker} {item.title}{suffix}", "cap", item.capability_id)
             if row: buttons.append(row)
@@ -1079,7 +1294,7 @@ class OnboardingBot:
         if page == "cap:status":
             lines = ["📊 وضعیت کلی Selfbot", ""]
             for category in self.panel.categories():
-                enabled, total = self.panel.category_stats(owner_id, category.category_id); lines.append(f"{category.title}: {enabled}/{total}")
+                enabled, total = category_counts(category.category_id); lines.append(f"{category.title}: {enabled}/{total}")
             return "\n".join(lines), [[self._panel_button("🏠 منوی اصلی", token, "home")]]
         if page.startswith("cap:"):
             capability_id = page.split(":", 1)[1]; item = self.capabilities.definition(capability_id)
@@ -1159,8 +1374,8 @@ class OnboardingBot:
                 await event.reply("پنل قابلیت‌ها پیکربندی نشده است.")
                 return
             try:
-                self.store.get_connected(user_id)
-                text, buttons = self._panel_view(user_id)
+                await asyncio.to_thread(self.store.get_connected, user_id)
+                text, buttons = await asyncio.to_thread(self._panel_view, user_id)
                 await event.reply(text, buttons=buttons)
             except NotFoundError:
                 await event.reply("ابتدا اکانت تلگرام را با /connect متصل کن.")
@@ -1195,7 +1410,7 @@ class OnboardingBot:
             return
         if lower == "/status":
             try:
-                record = self.store.get_connected(user_id)
+                record = await asyncio.to_thread(self.store.get_connected, user_id)
             except NotFoundError:
                 await event.reply("اکانت تلگرام متصل نیست.")
             else:
@@ -1206,7 +1421,7 @@ class OnboardingBot:
             if watcher and not watcher.done():
                 watcher.cancel()
             await self.auth.cancel(user_id)
-            count = self.store.revoke(user_id)
+            count = await asyncio.to_thread(self.store.revoke, user_id)
             self._states.pop(user_id, None)
             await event.reply("اتصال لغو شد." if count == 0 else "اتصال اکانت قطع شد. برای اتصال دوباره /connect را بزن.")
             return

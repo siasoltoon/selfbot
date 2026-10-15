@@ -176,3 +176,44 @@ A phase remains non-final until its required evidence is recorded.
 - Live validation has NOT RUN yet because the Supabase `DATABASE_URL` secret has not been installed in GitHub Actions.
 - Required live checks: PostgreSQL connectivity diagnostic, `alembic upgrade head`, durable write/read/cleanup, encrypted Telegram session persistence/reload, Telegram runtime startup, `/status`, `/panel` and `/پنل`, controlled restart/session reuse.
 - Do not claim PostgreSQL PASS or remove SQL Server/Tailscale rollback infrastructure before these checks pass.
+
+
+## 2026-10-15 — Telegram reconnect resilience
+- Added tests for Telegram timeout/retry defaults, environment overrides, invalid bounds, and policy propagation into runtime/auth client factories.
+- GitHub Actions CI for branch fix/telegram-runtime-reconnect-resilience is the next validation gate; no PASS is claimed before results are observed.
+- Runtime run 37466169802 reached successful PostgreSQL diagnostics and Alembic migration, then was canceled while the bot was running. This is not a successful live responsiveness test and not a startup failure.
+
+
+### Validation result — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12, including source compilation and the full pytest suite.
+- This is code/CI PASS only. A fresh live runtime is still required to validate Telegram command latency and reconnection behavior.
+
+
+## 2026-10-15 — Telegram latency hardening
+- Added a regression assertion that the onboarding panel home render calls `CapabilityService.snapshot` once rather than once per category.
+- Existing runtime router tests cover status/panel routing; the latest branch CI must validate the threaded database-call changes on Python 3.11 and 3.12.
+- Live Telegram response latency remains NOT_RUN until a fresh runtime run records the new command elapsed-time logs.
+
+
+### Validation result — response latency follow-up
+- CI run `38718072323`: Python 3.11 PASS, Python 3.12 PASS; compilation and full pytest completed successfully.
+- The regression test verifies the onboarding panel renders from one capability snapshot. This validates code behavior, not real Telegram latency.
+- Live `/start`, `/status`, `/panel`, `/پنل` timing and reconnect behavior remain NOT_RUN.
+
+
+## 2026-10-15 — Inline panel callback follow-up
+- Added tests that toggle actions map to `cap:<capability_id>` and the initial inline landing page renders without querying capability state.
+- CI run `38720998500` passed on Python 3.11 and 3.12; compilation and full pytest suite passed.
+- Live Telegram retest remains NOT_RUN after this fix. Earlier user-provided logs show callback handler errors and inline query expiration.
+
+## 2026-10-15 — Panel callback payload failure regression
+- Live runtime evidence: category callback failed with `ValueError: Too many bytes for the data`; capability callback also surfaced `MessageNotModifiedError` for unchanged inline message content.
+- Added regression tests for compact encoding/decoding of long capability IDs, legacy target compatibility, and callback payloads staying within Telegram's 64-byte limit.
+- Runtime code now explicitly guards UTF-8 callback payload size and treats `MessageNotModifiedError` as a benign no-op.
+- CI run `38723195343`: PASS on Python 3.11 and 3.12; compile and full pytest passed. Real Telegram button interaction: NOT_RUN after this fix.
+
+## 2026-10-16 — Capability snapshot performance regression
+- Added regression test that counts `_record()` calls and makes `is_enabled()` fail if called by `snapshot()`; snapshot passes with exactly one durable-record read.
+- Added safe callback lifecycle instrumentation to distinguish callbacks not reaching the bot from callbacks blocked during rendering or edits.
+- CI run `38813684030`: Python 3.11 PASS; Python 3.12 PASS; source compilation and full pytest suite passed.
+- Real Telegram callback/navigation/toggle verification after this fix: NOT RUN.

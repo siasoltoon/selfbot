@@ -178,3 +178,48 @@ Do not fabricate PASS for environment-dependent checks. Any failure discovered t
 - Completed: repository state inspection; PostgreSQL/Alembic compatibility review; dedicated branch `feat/supabase-postgres-runtime`; PR #49 created; runtime workflow switched to PostgreSQL; bounded PostgreSQL connection timeout added; PostgreSQL config regression test added.
 - Pending: CI green validation; configure GitHub `DATABASE_URL` with the Supabase Session Pooler URI; run Alembic against Supabase; run durable persistence/session smoke test; run Telegram runtime; verify `/status`, `/panel`, `/پنل`, and restart/session reuse; then update deployment/state docs and only after successful evidence retire SQL Server/Tailscale runtime dependency.
 - Security rule: never commit or expose the Supabase database password/complete secret URI.
+
+
+## 2026-10-15 — Active task: bound Telegram reconnect attempts
+- Investigated the previous GitHub Actions runtime job and logs. PostgreSQL diagnostics and migrations succeeded; the bot stayed running until the operator canceled the long-running job. Telethon logs contained reconnect attempts and then resumed update processing.
+- Added configurable connection timeout/retry controls and wired them to onboarding, QR auth, and linked-account Telegram clients.
+- Added config range/default/override tests and runtime policy tests.
+- Next: review branch diff, run CI, fix any regression, then use a fresh runtime to test /start, /status, /panel, /پنل, linked-account routing and restart/session reuse. Live responsiveness remains unverified.
+
+
+### Validation update — 2026-10-15
+- PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 (compile and full pytest).
+- The code change is CI-validated; live Telegram responsiveness and restart/session reuse remain open external checks. Do not report the delay as definitively fixed until those checks are observed.
+
+
+## 2026-10-15 — Follow-up task: improve Telegram command responsiveness
+- Reduced panel home/category/status rendering to one capability snapshot per page render.
+- Offloaded selected blocking database operations used by Telegram handlers and linked-session startup/auth flows to worker threads, preserving async transport responsiveness during database waits.
+- Added elapsed-time logs for onboarding slash commands without logging message bodies.
+- Pending validation: CI for the updated PR branch and real runtime latency checks for `/start`, `/status`, `/panel`, and `/پنل`; do not claim measured speedup until runtime logs are available.
+
+
+### Validation result — response latency follow-up
+- GitHub Actions run `38718072323` passed on Python 3.11 and 3.12 (compile and full pytest).
+- Live Telegram latency remains unmeasured; next step is a fresh runtime run and comparison of the new `telegram onboarding command handled` elapsed-time logs.
+
+
+## 2026-10-15 — Panel buttons unresponsive: follow-up
+- Root evidence: live logs contained `QueryIdInvalidError` from late inline-query answers and `Unhandled exception on on_callback`; observed command durations included ~10 s and ~75 s.
+- Implemented a database-free inline panel landing page, immediate callback acknowledgement, safe callback error logging/display, and correct post-toggle page routing.
+- Added regression tests for toggle navigation and fast panel construction without a capability database read.
+- CI run `38720998500` passed on Python 3.11 and 3.12. Pending: fresh live verification of panel category navigation, capability details, toggles, `/start`, `/status`, `/panel`, and `/پنل`.
+
+## 2026-10-15 — Confirmed inline panel callback byte-limit defect
+- New live logs isolated the category-navigation failure: Telethon raises `ValueError: Too many bytes for the data` while constructing callback buttons for long capability IDs. Telegram callback data is limited to 64 bytes; nested capability buttons can exceed the limit and prevent the page from being edited.
+- Added compact deterministic base-36 target aliases for panel category/capability IDs while preserving owner-token verification and compatibility with already-rendered legacy target values.
+- Added an explicit UTF-8 byte-length guard before creating inline buttons.
+- `MessageNotModifiedError` is now treated as an idempotent no-op rather than a failed panel action.
+- Regression coverage added for long capability targets, payload size, compact/legacy decoding. CI run `38723195343` passed on Python 3.11 and 3.12.
+- Live Telegram verification is still required after a fresh runtime: navigate categories, open long-ID modules, toggle one capability and verify persistence. Do not mark panel interaction PASS based on CI alone.
+
+## 2026-10-16 — Fix panel snapshot N+1 database reads
+- Root cause: `CapabilityService.snapshot()` performed one durable state lookup, then called `is_enabled()` for every child capability; each child call fetched the same owner state again. Remote database latency multiplied into dozens of round trips during `/panel`, `/status`, and callback page rendering.
+- Replaced repeated lookups with one `_record(owner_id)` read and in-memory parent-state resolution. This preserves the previous immediate-parent gating semantics.
+- Added `test_capability_snapshot_reads_durable_state_once` and callback lifecycle diagnostics (`callback_received`, `callback_acknowledged`, `callback_page_rendered`, `callback_completed`).
+- CI run `38813684030`: PASS on Python 3.11 and 3.12. Live Telegram validation is still pending.

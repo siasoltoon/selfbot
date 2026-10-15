@@ -44,6 +44,10 @@ class Settings:
     pc_worker_token: str | None
     database_connect_retries: int = 3
     database_connect_retry_delay: float = 1.0
+    telegram_connection_timeout: float = 10.0
+    telegram_connection_retries: int = 3
+    telegram_retry_delay: float = 1.0
+    telegram_request_retries: int = 3
     owner_id: str | None = None
     telegram_session_is_string: bool = True
     telegram_onboarding_bot_token: str | None = None
@@ -82,6 +86,22 @@ def load_settings() -> Settings:
         raise ConfigurationError("DATABASE_CONNECT_RETRY_DELAY must be a number") from exc
     if database_connect_retry_delay < 0 or database_connect_retry_delay > 30:
         raise ConfigurationError("DATABASE_CONNECT_RETRY_DELAY must be between 0 and 30")
+
+    telegram_connection_retries = _int_env("TELEGRAM_CONNECTION_RETRIES", 3)
+    if not 0 <= telegram_connection_retries <= 10:
+        raise ConfigurationError("TELEGRAM_CONNECTION_RETRIES must be between 0 and 10")
+    telegram_request_retries = _int_env("TELEGRAM_REQUEST_RETRIES", 3)
+    if not 0 <= telegram_request_retries <= 10:
+        raise ConfigurationError("TELEGRAM_REQUEST_RETRIES must be between 0 and 10")
+    try:
+        telegram_connection_timeout = float(os.getenv("TELEGRAM_CONNECTION_TIMEOUT", "10.0"))
+        telegram_retry_delay = float(os.getenv("TELEGRAM_RETRY_DELAY", "1.0"))
+    except ValueError as exc:
+        raise ConfigurationError("Telegram timeout and retry delay must be numbers") from exc
+    if not 1 <= telegram_connection_timeout <= 60:
+        raise ConfigurationError("TELEGRAM_CONNECTION_TIMEOUT must be between 1 and 60 seconds")
+    if not 0 <= telegram_retry_delay <= 30:
+        raise ConfigurationError("TELEGRAM_RETRY_DELAY must be between 0 and 30 seconds")
 
     worker_enabled = _bool_env("PC_WORKER_ENABLED", False)
     worker_url = os.getenv("PC_WORKER_URL")
@@ -122,6 +142,10 @@ def load_settings() -> Settings:
         database_echo=_bool_env("DATABASE_ECHO", False),
         database_connect_retries=database_connect_retries,
         database_connect_retry_delay=database_connect_retry_delay,
+        telegram_connection_timeout=telegram_connection_timeout,
+        telegram_connection_retries=telegram_connection_retries,
+        telegram_retry_delay=telegram_retry_delay,
+        telegram_request_retries=telegram_request_retries,
         telegram_api_id=os.getenv("TELEGRAM_API_ID") or None,
         telegram_api_hash=os.getenv("TELEGRAM_API_HASH") or None,
         telegram_session=os.getenv("TELEGRAM_SESSION") or None,

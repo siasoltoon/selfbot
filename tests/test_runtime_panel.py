@@ -133,10 +133,20 @@ def test_onboarding_bot_panel_command_replies_with_real_buttons():
     bot.panel = PanelService(capabilities)
     bot.panel_token_factory = lambda owner_id: "signed-token"
     bot.logger = type("Logger", (), {"warning": staticmethod(lambda *args, **kwargs: None)})()
+    snapshot_calls = 0
+    original_snapshot = capabilities.snapshot
+
+    def counted_snapshot(owner_id):
+        nonlocal snapshot_calls
+        snapshot_calls += 1
+        return original_snapshot(owner_id)
+
+    capabilities.snapshot = counted_snapshot
 
     event = Event()
     asyncio.run(bot._handle("owner", event, "/پنل"))
 
+    assert snapshot_calls == 1
     assert len(event.replies) == 1
     text, kwargs = event.replies[0]
     assert "Selfbot Control Center" in text
@@ -268,3 +278,109 @@ def test_database_connection_retry_settings_are_safe():
             os.environ.pop("DATABASE_CONNECT_RETRY_DELAY", None)
         else:
             os.environ["DATABASE_CONNECT_RETRY_DELAY"] = original_delay
+
+def test_panel_action_maps_toggle_back_to_capability_page():
+    from selfbot.multi_user_telegram import OnboardingBot
+
+    assert OnboardingBot._panel_page_for_action("toggle", "panel_ping") == "cap:panel_ping"
+    assert OnboardingBot._panel_page_for_action("category", "security") == "category:security"
+    assert OnboardingBot._panel_page_for_action("system", None) == "system"
+    assert OnboardingBot._panel_page_for_action("home", None) == "home"
+
+
+def test_fast_panel_home_does_not_query_capability_database():
+    from selfbot.multi_user_telegram import OnboardingBot
+    from selfbot.panel import PanelService
+
+    class NoDatabaseCapabilities:
+        def definitions(self):
+            raise AssertionError("fast panel home must not read database-backed capabilities")
+
+    class FakeAuth:
+        @staticmethod
+        def _safe_exception_message(exc):
+            return str(exc)
+
+    bot = OnboardingBot.__new__(OnboardingBot)
+    bot.capabilities = NoDatabaseCapabilities()
+    bot.panel = PanelService(bot.capabilities)
+    bot.panel_token_factory = lambda owner_id: "signed-token"
+    text, buttons = bot._panel_home_fast("owner")
+
+    assert "پنل آماده است" in text
+    assert len(buttons) >= 4
+
+def test_panel_callback_data_is_compact_for_long_capability_ids(monkeypatch):
+    from types import SimpleNamespace
+    import telethon
+    from selfbot.multi_user_telegram import OnboardingBot
+    from selfbot.panel import PanelService
+
+    class FakeButton:
+        @staticmethod
+        def inline(text, data):
+            return SimpleNamespace(text=text, data=data.encode("utf-8"))
+
+    monkeypatch.setattr(telethon, "Button", FakeButton)
+
+    db = Database("sqlite+pysqlite:///:memory:")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    bot = OnboardingBot.__new__(OnboardingBot)
+    bot.capabilities = capabilities
+    bot.panel = PanelService(capabilities)
+    bot.panel_token_factory = lambda owner_id: "x" * 31
+    bot.store = type("Store", (), {"get_connected": lambda self, owner_id: object()})()
+
+    category_text, category_buttons = bot._panel_page("owner", "category:myoi_auto")
+    child_text, child_buttons = bot._panel_page("owner", "cap:panel_auto_factory")
+    all_buttons = [button for row in category_buttons + child_buttons for button in row]
+
+    assert "خودکار" in category_text
+    assert "کارخونه" in child_text
+    assert all(len(button.data) <= 64 for button in all_buttons)
+    assert any(
+        OnboardingBot._decode_panel_target(button.data.decode().split("|")[-1]) == "panel_auto_factory_range"
+        for button in all_buttons
+        if button.data.decode().startswith("panel|") and len(button.data.decode().split("|")) == 4
+    )
+    db.engine.dispose()
+
+
+def test_panel_target_codec_supports_compact_and_legacy_targets():
+    from selfbot.multi_user_telegram import OnboardingBot
+
+    encoded = OnboardingBot._encode_panel_target("panel_auto_factory_range")
+    assert len(encoded) <= 2
+    assert OnboardingBot._decode_panel_target(encoded) == "panel_auto_factory_range"
+    assert OnboardingBot._decode_panel_target("myoi_auto") == "myoi_auto"
+
+
+def test_capability_snapshot_reads_durable_state_once(monkeypatch):
+    from selfbot.capabilities import CapabilityService
+    from selfbot.db import Database
+    from selfbot.domain_store import DomainStore
+
+    db = Database("sqlite+pysqlite:///:memory:")
+    db.create_schema_for_tests()
+    capabilities = CapabilityService(DomainStore(db))
+    calls = 0
+    original_record = capabilities._record
+
+    def counted_record(owner_id):
+        nonlocal calls
+        calls += 1
+        return original_record(owner_id)
+
+    def unexpected_is_enabled(owner_id, capability_id):
+        raise AssertionError("snapshot must not query durable state once per capability")
+
+    monkeypatch.setattr(capabilities, "_record", counted_record)
+    monkeypatch.setattr(capabilities, "is_enabled", unexpected_is_enabled)
+
+    snapshot = capabilities.snapshot("snapshot-owner")
+
+    assert calls == 1
+    assert snapshot["panel_auto_factory"] is False
+    assert snapshot["panel_auto_factory_range"] is False
+    db.engine.dispose()

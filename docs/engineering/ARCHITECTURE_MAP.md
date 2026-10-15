@@ -95,3 +95,15 @@ Linked Telethon user client -> MyoiTelegramAdapter -> @MeowieeeQBot messages/vis
 ## 2026-09-27 — External Database Persistence
 - Storage adapter boundary: SQLAlchemy `Database` accepts SQLite, PostgreSQL and SQL Server (`mssql+pyodbc`) without changing core services.
 - Durable schema ownership: Alembic imports all ORM models; migration `0003_durable_runtime_state` provisions domain state, security audit, encrypted Telegram sessions and diamond economy.
+
+
+## 2026-10-15 — Telegram transport policy
+- Telethon client transport parameters are configured by Settings and injected from application composition into TelegramAuthenticationService, MultiUserTelegramRuntime, and OnboardingBot.
+- Environment: TELEGRAM_CONNECTION_TIMEOUT, TELEGRAM_CONNECTION_RETRIES, TELEGRAM_RETRY_DELAY, TELEGRAM_REQUEST_RETRIES.
+- The policy retains Telethon automatic reconnection while bounding individual connection/request retry behavior; it does not guarantee command delivery while the underlying Telegram transport is offline.
+
+
+## Telegram latency boundary — 2026-10-15
+- Async Telegram handlers must not run potentially slow synchronous database operations on the event loop. Use `asyncio.to_thread` at the transport/application boundary for blocking store and capability calls.
+- Panel rendering should reuse one owner-scoped capability snapshot for all page counts rather than querying state separately for each category.
+- Onboarding slash-command completion logs include bounded command labels and elapsed milliseconds, never raw message text or account credentials.
