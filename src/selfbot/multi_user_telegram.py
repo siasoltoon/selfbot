@@ -26,7 +26,8 @@ from .events import EventEnvelope, EventRouter
 from .logging import get_logger
 from .multi_user_models import TelegramAccount
 from .multi_user_security import SessionCipher
-from .panel import PanelService
+from .capabilities import PANEL_CAPABILITIES
+from .panel import PANEL_CATEGORIES, PanelService
 
 
 class AuthClient(Protocol):
@@ -1066,7 +1067,15 @@ class OnboardingBot:
             sender = str(getattr(event, "sender_id", "") or "")
             if sender != owner_id:
                 await event.answer("این پنل متعلق به شما نیست.", alert=True); return
-            action = parts[2]; target = parts[3] if len(parts) == 4 else None
+            action = parts[2]
+            try:
+                target = self._decode_panel_target(parts[3]) if len(parts) == 4 else None
+            except ValueError as exc:
+                await event.answer("دادهٔ دکمه معتبر نیست. پنل را دوباره باز کن.", alert=True)
+                self.logger.warning("telegram panel callback target rejected", extra={"context": {
+                    "stage": "callback_target_decode", "exception_type": type(exc).__name__
+                }})
+                return
             # Acknowledge before any remote database access: callback query IDs
             # expire quickly and must not wait for Supabase/database latency.
             try:
@@ -1090,6 +1099,11 @@ class OnboardingBot:
                     text = f"{message}\\n\\n{text}"
                 await event.edit(text, buttons=buttons)
             except Exception as exc:
+                if type(exc).__name__ == "MessageNotModifiedError":
+                    self.logger.info("telegram panel callback produced no message changes", extra={"context": {
+                        "stage": "callback_edit_unchanged", "action": action
+                    }})
+                    return
                 self.logger.warning("telegram panel callback failed", extra={"context":{
                     "stage":"callback_processing","action":action,"exception_type":type(exc).__name__,
                     "error_message":self.auth._safe_exception_message(exc)
@@ -1113,9 +1127,51 @@ class OnboardingBot:
         self.panel_token_factory = token_factory; self._panel_token_verifier = token_verifier
 
     @staticmethod
-    def _panel_button(text: str, token: str, action: str, target: str | None = None) -> Any:
+    def _panel_target_values() -> tuple[str, ...]:
+        """Stable vocabulary for encoding panel targets into short callback data."""
+        return (
+            "status",
+            *(category.category_id for category in PANEL_CATEGORIES),
+            *(item.capability_id for item in PANEL_CAPABILITIES),
+        )
+
+    @classmethod
+    def _encode_panel_target(cls, target: str) -> str:
+        values = cls._panel_target_values()
+        try:
+            index = values.index(target)
+        except ValueError as exc:
+            raise ValueError("unknown panel target") from exc
+        alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+        if index == 0:
+            return "0"
+        encoded = ""
+        while index:
+            index, remainder = divmod(index, 36)
+            encoded = alphabet[remainder] + encoded
+        return encoded
+
+    @classmethod
+    def _decode_panel_target(cls, encoded: str) -> str:
+        values = cls._panel_target_values()
+        # Accept targets from already-rendered messages during rolling restarts.
+        if encoded in values:
+            return encoded
+        try:
+            index = int(encoded, 36)
+        except ValueError as exc:
+            raise ValueError("invalid panel target code") from exc
+        if index < 0 or index >= len(values):
+            raise ValueError("unknown panel target code")
+        return values[index]
+
+    @classmethod
+    def _panel_button(cls, text: str, token: str, action: str, target: str | None = None) -> Any:
         from telethon import Button
-        data = f"panel|{token}|{action}" + (f"|{target}" if target else "")
+        compact_target = cls._encode_panel_target(target) if target else None
+        data = f"panel|{token}|{action}" + (f"|{compact_target}" if compact_target else "")
+        if len(data.encode("utf-8")) > 64:
+            raise ValueError("panel callback data exceeds Telegram's 64-byte limit")
         return Button.inline(text, data)
 
     @staticmethod
