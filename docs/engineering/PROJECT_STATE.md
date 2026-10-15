@@ -184,3 +184,10 @@ Do not mark the entire project release PASS until those evidence items are compl
 ### Validation update — 2026-10-15
 - PR #50 CI run 38716881102 passed on Python 3.11 and 3.12 after the transport-policy changes and engineering-state updates.
 - This does not close the live Telegram responsiveness gate. The next runtime run must verify immediate `/start`, `/status`, `/panel`, `/پنل` replies and behavior after a reconnect.
+
+
+## 2026-10-15 — Telegram response-latency hardening
+- Follow-up to PR #50 reduces remote-database round trips in the Telegram panel: one capability snapshot now feeds the home/category/status panel counts instead of repeated snapshots per category.
+- Database-backed panel rendering, account-status reads, capability gates, QR account-list reads, linked-session startup reads, session persistence, and revoke operations are moved to `asyncio.to_thread` at async Telegram boundaries to avoid blocking the shared event loop during database waits.
+- Added structured elapsed-time logging for onboarding slash commands (command name, elapsed milliseconds, hashed user fingerprint; message contents are not logged).
+- This is a targeted responsiveness improvement, not a claim that Telegram network outages are solved. Live latency needs a fresh runtime measurement.
