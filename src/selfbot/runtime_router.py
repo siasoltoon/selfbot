@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import asyncio
 import ast
 import operator
 from typing import Protocol
@@ -80,7 +81,7 @@ class TelegramRuntimeRouter:
         if self.services is None:
             return True
         try:
-            self.services.capabilities.require(owner_id, capability_id)
+            await asyncio.to_thread(self.services.capabilities.require, owner_id, capability_id)
             return True
         except (ValidationError, NotFoundError) as exc:
             await self._send(event, f"این قابلیت خاموش است: {exc}")
@@ -221,7 +222,7 @@ class TelegramRuntimeRouter:
             return
         if command in {".وضعیت", "/وضعیت"}:
             if await self._require_capability(event, owner_id, "panel_utility_status"):
-                snapshot = self.services.capabilities.snapshot(owner_id)
+                snapshot = await asyncio.to_thread(self.services.capabilities.snapshot, owner_id)
                 await self._send(event, f"🟢 Selfbot فعال است. قابلیت‌های روشن: {sum(snapshot.values())}/{len(snapshot)}")
             return
         if command in {".امروز", "/امروز"}:
@@ -257,7 +258,7 @@ class TelegramRuntimeRouter:
             if self.services is None:
                 await self._send(event, "Selfbot is running.")
                 return
-            snapshot = self.services.capabilities.snapshot(owner_id)
+            snapshot = await asyncio.to_thread(self.services.capabilities.snapshot, owner_id)
             enabled = sum(snapshot.values())
             await self._send(event, f"Selfbot فعال است. قابلیت‌های روشن: {enabled}/{len(snapshot)}")
             return
