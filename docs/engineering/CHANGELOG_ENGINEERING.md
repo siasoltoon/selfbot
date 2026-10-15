@@ -204,3 +204,9 @@ Only environment-dependent verification remains before final release: real Teleg
 - Created PR #49: runtime production database path now targets PostgreSQL, installs the existing psycopg optional dependency, validates the database target without printing credentials, and refuses an absent production `DATABASE_URL`.
 - Added bounded PostgreSQL connection acquisition timeout and configuration regression coverage.
 - Live Supabase evidence remains pending.
+
+
+## 2026-10-15 — Telegram reconnect resilience
+- Investigated the previous long-running GitHub Actions runtime log; PostgreSQL diagnostics and migrations succeeded, and Telethon later resumed update processing after reconnect activity.
+- Added validated environment settings for Telethon connection timeout, connection retries, retry delay, and request retries; wired them to onboarding, QR login and persisted account clients.
+- Added config validation and reconnect-policy regression tests. CI/live runtime verification pending.
