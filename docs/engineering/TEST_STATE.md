@@ -176,3 +176,9 @@ A phase remains non-final until its required evidence is recorded.
 - Live validation has NOT RUN yet because the Supabase `DATABASE_URL` secret has not been installed in GitHub Actions.
 - Required live checks: PostgreSQL connectivity diagnostic, `alembic upgrade head`, durable write/read/cleanup, encrypted Telegram session persistence/reload, Telegram runtime startup, `/status`, `/panel` and `/پنل`, controlled restart/session reuse.
 - Do not claim PostgreSQL PASS or remove SQL Server/Tailscale rollback infrastructure before these checks pass.
+
+
+## 2026-10-15 — Telegram reconnect resilience
+- Added tests for Telegram timeout/retry defaults, environment overrides, invalid bounds, and policy propagation into runtime/auth client factories.
+- GitHub Actions CI for branch fix/telegram-runtime-reconnect-resilience is the next validation gate; no PASS is claimed before results are observed.
+- Runtime run 37466169802 reached successful PostgreSQL diagnostics and Alembic migration, then was canceled while the bot was running. This is not a successful live responsiveness test and not a startup failure.
