@@ -236,4 +236,4 @@ Only environment-dependent verification remains before final release: real Teleg
 - Fixed confirmed Telegram inline-button failure caused by callback payloads exceeding the 64-byte limit when full capability IDs were embedded alongside the signed owner token.
 - Added compact deterministic target codes, legacy-target compatibility during runtime/message refresh, and an explicit byte-length guard.
 - Treated Telegram's unchanged-message edit exception as a benign idempotent outcome.
-- Added focused regression tests. CI and fresh live runtime verification are pending.
+- Added focused regression tests. CI run `38723195343` passed on Python 3.11 and 3.12; fresh live runtime verification remains pending.
