@@ -209,3 +209,9 @@ Do not mark the entire project release PASS until those evidence items are compl
 - Latest live logs identify the concrete button failure: long capability IDs make Telethon reject inline callback data above Telegram's 64-byte limit. The `/start`, `/status`, and panel entry commands are responsive in the latest run, but nested button navigation remains broken until the callback payload fix is deployed.
 - Branch `fix/telegram-runtime-reconnect-resilience` now uses compact deterministic target aliases, validates callback-data byte length, preserves authenticated owner tokens and legacy target decoding, and suppresses benign `MessageNotModifiedError` noise.
 - Required next gate: branch CI, then a fresh runtime run to verify category navigation, long capability detail pages, toggle + persistence, and callback error-free logs. Network reconnect delays seen earlier remain a separate live-runtime concern.
+
+## 2026-10-16 — Panel latency root cause and callback tracing
+- Latest runtime showed `/status` and `/panel` taking 80+ seconds while buttons produced no visible navigation. The code-level cause found in the current branch was `CapabilityService.snapshot()` calling `is_enabled()` once per child capability; each call reloaded the owner state from the remote domain store. Panel rendering therefore caused dozens of network round trips.
+- `snapshot()` now reads owner state once and resolves all capability values in memory. Added regression coverage proving one durable read and no per-capability `is_enabled()` calls.
+- Added safe lifecycle logs for callback receipt, acknowledgment, page-render duration, and successful edit, without logging callback tokens or raw payloads.
+- CI run `38813684030` passed on Python 3.11 and 3.12. Fresh live Telegram verification remains required; do not claim buttons fixed until a new runtime confirms category navigation and toggle persistence.
