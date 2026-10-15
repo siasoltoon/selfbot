@@ -187,3 +187,9 @@ A phase remains non-final until its required evidence is recorded.
 ### Validation result — 2026-10-15
 - PR #50 CI run 38716881102 passed on Python 3.11 and 3.12, including source compilation and the full pytest suite.
 - This is code/CI PASS only. A fresh live runtime is still required to validate Telegram command latency and reconnection behavior.
+
+
+## 2026-10-15 — Telegram latency hardening
+- Added a regression assertion that the onboarding panel home render calls `CapabilityService.snapshot` once rather than once per category.
+- Existing runtime router tests cover status/panel routing; the latest branch CI must validate the threaded database-call changes on Python 3.11 and 3.12.
+- Live Telegram response latency remains NOT_RUN until a fresh runtime run records the new command elapsed-time logs.
